@@ -2,7 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  # prometheus-config.yaml removed - prometheus-config ConfigMap is defined in grafana.yaml
+  # grafana.yaml contains: Grafana deployment, prometheus-config, grafana-dashboards
   - grafana.yaml
   - alertmanager.yaml
   - alert-rules.yaml
@@ -12,5 +12,7 @@ resources:
   - kube-state-metrics.yaml
   - blackbox-exporter.yaml
   - persistent-volumes.yaml
-  - dashboards-configmap.yaml
-  - enhanced-dashboards-configmap.yaml
+  # Removed duplicate ConfigMaps:
+  # - prometheus-config.yaml (in grafana.yaml)
+  # - dashboards-configmap.yaml (in grafana.yaml)
+  # - enhanced-dashboards-configmap.yaml (duplicate dashboards)
