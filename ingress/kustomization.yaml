@@ -6,6 +6,7 @@ namespace: ingress
 resources:
   - cloudflared-deployment.yaml
   - cloudflared-config.yaml
+  - cloudflared-pdb.yaml
   # Secret managed externally (not in Git for security)
   # Apply manually: kubectl apply -f cloudflared-credentials-sealed.yaml
 

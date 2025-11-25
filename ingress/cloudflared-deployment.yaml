@@ -6,7 +6,7 @@ metadata:
   labels:
     app: cloudflared
 spec:
-  replicas: 3
+  replicas: 4
   selector:
     matchLabels:
       app: cloudflared
@@ -43,7 +43,7 @@ spec:
           type: RuntimeDefault
       containers:
       - name: cloudflared
-        image: cloudflare/cloudflared:latest
+        image: cloudflare/cloudflared:2025.11.1
         args:
         - tunnel
         - --no-autoupdate
@@ -62,23 +62,29 @@ spec:
           limits:
             memory: "256Mi"
             cpu: "200m"
-        # Health checks
+        # Health checks - optimized for stability
         livenessProbe:
           httpGet:
             path: /ready
             port: 2000
-          initialDelaySeconds: 60
-          periodSeconds: 30
+          initialDelaySeconds: 30
+          periodSeconds: 15
           timeoutSeconds: 10
-          failureThreshold: 3
+          failureThreshold: 5
         readinessProbe:
           httpGet:
             path: /ready
             port: 2000
-          initialDelaySeconds: 30
-          periodSeconds: 10
+          initialDelaySeconds: 10
+          periodSeconds: 5
           timeoutSeconds: 5
-          failureThreshold: 3
+          failureThreshold: 2
+          successThreshold: 2
+        # Graceful shutdown - allow connections to drain
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 15"]
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -93,6 +99,8 @@ spec:
         env:
         - name: TUNNEL_DNS_UPSTREAM
           value: "https://1.1.1.1/dns-query,https://8.8.8.8/dns-query"
+      # Allow connections to drain during shutdown
+      terminationGracePeriodSeconds: 60
       # DNS configuration to use host DNS if available
       dnsPolicy: ClusterFirstWithHostNet
       volumes:

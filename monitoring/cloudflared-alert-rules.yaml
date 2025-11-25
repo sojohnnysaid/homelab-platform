@@ -1,0 +1,97 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-cloudflared-rules
+  namespace: monitoring
+data:
+  cloudflared.rules.yml: |
+    groups:
+    - name: cloudflared_stability
+      interval: 15s
+      rules:
+      # Alert on frequent pod restarts (indicates instability)
+      - alert: CloudflaredPodRestarts
+        expr: |
+          increase(kube_pod_container_status_restarts_total{
+            namespace="ingress",
+            container="cloudflared"
+          }[1h]) > 2
+        for: 5m
+        labels:
+          severity: warning
+          component: cloudflared
+        annotations:
+          summary: "Cloudflared pods restarting frequently"
+          description: "Cloudflared container has restarted {{ $value }} times in the last hour. Check for image updates or configuration issues."
+
+      # Alert on readiness failures (causes 502 errors)
+      - alert: CloudflaredReadinessFailures
+        expr: |
+          sum(kube_pod_status_ready{
+            namespace="ingress",
+            pod=~"cloudflared.*"
+          } == 0) > 0
+        for: 2m
+        labels:
+          severity: warning
+          component: cloudflared
+        annotations:
+          summary: "Cloudflared pod not ready"
+          description: "One or more cloudflared pods are failing readiness checks. May cause 502 errors."
+
+      # Alert on high 502 error rate
+      - alert: Cloudflared502ErrorRate
+        expr: |
+          (
+            sum(rate(cloudflared_tunnel_response_by_code{status_code="502"}[5m]))
+            /
+            sum(rate(cloudflared_tunnel_total_requests[5m]))
+          ) > 0.01
+        for: 2m
+        labels:
+          severity: critical
+          component: cloudflared
+        annotations:
+          summary: "High 502 error rate from Cloudflared"
+          description: "More than 1% of requests through cloudflared tunnel are returning 502 errors. Current rate: {{ $value | humanizePercentage }}"
+
+      # Alert on high latency through tunnel
+      - alert: CloudflaredHighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(cloudflared_tunnel_request_duration_seconds_bucket[5m])) by (le)
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+          component: cloudflared
+        annotations:
+          summary: "High latency through Cloudflared tunnel"
+          description: "95th percentile latency is {{ $value }}s. Check backend service health and network conditions."
+
+      # Alert when all pods are down (critical outage)
+      - alert: CloudflaredAllPodsDown
+        expr: |
+          sum(up{job="cloudflared"}) == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: cloudflared
+        annotations:
+          summary: "All Cloudflared pods are down"
+          description: "No cloudflared pods are responding. Complete tunnel outage - all external traffic will fail."
+
+      # Alert when available replicas drop below PDB threshold
+      - alert: CloudflaredLowAvailability
+        expr: |
+          kube_deployment_status_replicas_available{
+            namespace="ingress",
+            deployment="cloudflared"
+          } < 2
+        for: 2m
+        labels:
+          severity: warning
+          component: cloudflared
+        annotations:
+          summary: "Cloudflared has low availability"
+          description: "Only {{ $value }} cloudflared replicas available. Minimum 2 required for high availability."
