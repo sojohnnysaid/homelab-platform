@@ -4,4 +4,6 @@ kind: Kustomization
 resources:
   - ingress-namespace.yaml
   - mirai-namespace.yaml
+  - redis-namespace.yaml
+  - static-sites-namespace.yaml
   - default-namespace.yaml

@@ -20,6 +20,11 @@ spec:
       labels:
         app: cloudflared
     spec:
+      # Allow scheduling on control-plane nodes
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
       # Ensure pods are spread across different nodes
       affinity:
         podAntiAffinity:
