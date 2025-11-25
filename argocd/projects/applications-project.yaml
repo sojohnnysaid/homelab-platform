@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: applications
+  namespace: argocd
+spec:
+  description: User-facing applications
+  sourceRepos:
+    - 'https://github.com/sojohnnysaid/mirai-app.git'
+    - 'https://github.com/sojohnnysaid/static-sites.git'
+  destinations:
+    - namespace: mirai
+      server: https://kubernetes.default.svc
+    - namespace: default
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist: []
+  namespaceResourceBlacklist:
+    - group: ''
+      kind: ResourceQuota
+    - group: ''
+      kind: LimitRange

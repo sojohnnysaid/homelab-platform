@@ -1,0 +1,27 @@
+---
+# Basic isolation for static sites in default namespace
+# Less restrictive than full tenant isolation since these are
+# simple static content with no sensitive data
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: static-sites-isolation
+  namespace: default
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  ingress:
+  # Allow from ingress namespace (cloudflared)
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: ingress
+  # Allow from monitoring (prometheus scraping)
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: monitoring
+  # Allow intra-namespace communication
+  - from:
+    - podSelector: {}

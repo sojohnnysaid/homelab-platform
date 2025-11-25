@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudflared-config
+  namespace: ingress
+data:
+  config.yml: |
+    tunnel: cb2a7768-4162-4da9-ac04-138fdecf3e3d
+    credentials-file: /etc/cloudflared/credentials.json
+    ingress:
+      - hostname: mirai.sogos.io
+        service: http://mirai-frontend.mirai.svc.cluster.local:80
+      - hostname: argocd.sogos.io
+        service: http://argocd-server.argocd.svc.cluster.local:80
+      - hostname: grafana.sogos.io
+        service: http://grafana.monitoring.svc.cluster.local:3000
+      - hostname: hello.sogos.io
+        service: http://hello-world.default.svc.cluster.local:80
+      - service: http_status:404

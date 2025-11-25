@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: ingress
+
+resources:
+  - cloudflared-deployment.yaml
+  - cloudflared-config.yaml
+  # Secret managed externally (not in Git for security)
+  # Apply manually: kubectl apply -f cloudflared-credentials-sealed.yaml
+
+# Note: commonLabels not used to avoid mutating immutable fields
+# on existing deployments (spec.selector)

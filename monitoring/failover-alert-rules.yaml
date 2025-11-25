@@ -1,0 +1,154 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-failover-rules
+  namespace: monitoring
+data:
+  failover.rules.yml: |
+    groups:
+    - name: failover_monitoring
+      interval: 10s
+      rules:
+      # Cloudflare Tunnel States
+      - alert: CloudflareTunnelHealthy
+        expr: |
+          (
+            count(up{job="cloudflared"} == 1) >= 2
+            and
+            probe_success{probe_type="public_https"} == 1
+          )
+        for: 30s
+        labels:
+          severity: info
+          component: cloudflare-tunnel
+          state: healthy
+        annotations:
+          summary: "Cloudflare Tunnel is Healthy"
+          description: "Cloudflare Tunnel has {{ $value }} healthy connections and public HTTPS probe is successful. Primary ingress path is operational."
+
+      - alert: CloudflareTunnelDegraded
+        expr: |
+          (
+            (count(up{job="cloudflared"} == 1) < 2 and count(up{job="cloudflared"} == 1) >= 1)
+            or
+            (probe_success{probe_type="public_https"} == 1 and probe_duration_seconds{probe_type="public_https"} > 2)
+          )
+        for: 30s
+        labels:
+          severity: warning
+          component: cloudflare-tunnel
+          state: degraded
+        annotations:
+          summary: "Cloudflare Tunnel is Degraded"
+          description: "Cloudflare Tunnel has reduced capacity ({{ $value }} healthy pods) or high latency. Performance may be impacted."
+
+      - alert: CloudflareTunnelDown
+        expr: |
+          (
+            count(up{job="cloudflared"} == 1) == 0
+            or
+            probe_success{probe_type="public_https"} == 0
+          )
+        for: 90s
+        labels:
+          severity: critical
+          component: cloudflare-tunnel
+          state: down
+        annotations:
+          summary: "Cloudflare Tunnel is DOWN"
+          description: "Cloudflare Tunnel has been down for more than 90 seconds. All cloudflared pods are offline or public HTTPS probe is failing. Failover to VPS should be active."
+
+      # WireGuard VPS Failover States
+      - alert: WireGuardFailoverReachable
+        expr: probe_success{probe_type="vps_direct"} == 1
+        for: 30s
+        labels:
+          severity: info
+          component: vps-failover
+          state: reachable
+        annotations:
+          summary: "WireGuard VPS Failover is Reachable"
+          description: "VPS at 165.227.110.199 is responding successfully. Failover path is available."
+
+      - alert: WireGuardFailoverDegraded
+        expr: |
+          probe_success{probe_type="vps_direct"} == 1
+          and
+          probe_duration_seconds{probe_type="vps_direct"} > 1
+        for: 30s
+        labels:
+          severity: warning
+          component: vps-failover
+          state: degraded
+        annotations:
+          summary: "WireGuard VPS Failover is Degraded"
+          description: "VPS failover path has high latency ({{ $value }}s). Response time exceeds normal thresholds."
+
+      - alert: WireGuardFailoverUnreachable
+        expr: probe_success{probe_type="vps_direct"} == 0
+        for: 60s
+        labels:
+          severity: critical
+          component: vps-failover
+          state: unreachable
+        annotations:
+          summary: "WireGuard VPS Failover is UNREACHABLE"
+          description: "VPS at 165.227.110.199 is not responding. Failover path is unavailable. Check VPS health and WireGuard tunnel."
+
+      # Dual Failure State
+      - alert: DualFailure
+        expr: |
+          (
+            (count(up{job="cloudflared"} == 1) == 0 or probe_success{probe_type="public_https"} == 0)
+            and
+            probe_success{probe_type="vps_direct"} == 0
+          )
+        for: 60s
+        labels:
+          severity: critical
+          component: all-paths
+          state: dual_failure
+        annotations:
+          summary: "DUAL FAILURE - All Ingress Paths Down"
+          description: "CRITICAL: Both Cloudflare Tunnel AND VPS failover are unreachable. mirai.sogos.io is completely offline. Immediate action required."
+
+      # Recovery Events
+      - alert: CloudflareTunnelRecovered
+        expr: |
+          (
+            count(up{job="cloudflared"} == 1) >= 2
+            and
+            probe_success{probe_type="public_https"} == 1
+          )
+          unless
+          (
+            count(up{job="cloudflared"} == 1 offset 5m) >= 2
+            and
+            probe_success{probe_type="public_https" offset 5m} == 1
+          )
+        for: 30s
+        labels:
+          severity: info
+          component: cloudflare-tunnel
+          state: recovered
+        annotations:
+          summary: "Cloudflare Tunnel has RECOVERED"
+          description: "Cloudflare Tunnel is now healthy after previous failure. {{ $value }} cloudflared pods are running and public HTTPS probe is successful."
+
+      - alert: TrafficSwitchBackToCloudflare
+        expr: |
+          (
+            (count(up{job="cloudflared"} == 1) >= 2 and probe_success{probe_type="public_https"} == 1)
+            and
+            (count(up{job="cloudflared"} == 1 offset 10m) == 0 or probe_success{probe_type="public_https" offset 10m} == 0)
+            and
+            probe_success{probe_type="vps_direct"} == 1
+          )
+        for: 2m
+        labels:
+          severity: info
+          component: traffic-routing
+          state: switch_back
+        annotations:
+          summary: "Traffic Switched Back to Cloudflare Tunnel"
+          description: "Cloudflare Tunnel has recovered and is stable. Traffic routing should now prefer Cloudflare Tunnel over VPS failover. Both paths are healthy."

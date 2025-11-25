@@ -1,0 +1,26 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "control-plane",
+    "title": "Control Plane Stability",
+    "tags": ["control-plane", "stability"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 0,
+    "refresh": "30s",
+    "panels": [
+      {
+        "id": 1,
+        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+        "type": "stat",
+        "title": "API Server Up",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "up{job=\"kubernetes-apiservers\"}"
+          }
+        ]
+      }
+    ]
+  }
+}

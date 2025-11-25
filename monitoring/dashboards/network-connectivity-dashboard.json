@@ -1,0 +1,26 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "network-connectivity",
+    "title": "Network Connectivity",
+    "tags": ["network", "connectivity"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 0,
+    "refresh": "30s",
+    "panels": [
+      {
+        "id": 1,
+        "gridPos": {"x": 0, "y": 0, "w": 24, "h": 8},
+        "type": "logs",
+        "title": "Network Errors",
+        "datasource": "Loki",
+        "targets": [
+          {
+            "expr": "{namespace=\"kube-system\"} |~ \"network|timeout\""
+          }
+        ]
+      }
+    ]
+  }
+}

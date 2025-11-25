@@ -1,0 +1,258 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wireguard-config
+  namespace: ingress
+data:
+  wg0.conf: |
+    [Interface]
+    Address = 10.100.0.2/24
+    ListenPort = 51820
+    PrivateKey = CLUSTER_PRIVATE_KEY_PLACEHOLDER
+
+    # PostUp/PostDown for iptables rules (traffic forwarding)
+    PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+    PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
+
+    # VPS peer configuration
+    [Peer]
+    # VPS WireGuard public key
+    PublicKey = 3JeBp1O1lXpfOwgSiXES0kGDdsp+qWtg+psL5+ehPiU=
+
+    # VPS endpoint (IP:Port)
+    Endpoint = 165.227.110.199:51820
+
+    # Allow traffic from VPS WireGuard IP
+    AllowedIPs = 10.100.0.1/32
+
+    # Keep connection alive (traverse NAT)
+    PersistentKeepalive = 25
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: wireguard-keys
+  namespace: ingress
+type: Opaque
+stringData:
+  # TODO: Generate these keys and replace placeholders
+  # Run: wg genkey | tee privatekey | wg pubkey > publickey
+  # Then: kubectl create secret generic wireguard-keys -n ingress \
+  #         --from-file=privatekey=./privatekey \
+  #         --from-file=publickey=./publickey --dry-run=client -o yaml
+  privatekey: "REPLACE_WITH_ACTUAL_PRIVATE_KEY"
+  publickey: "REPLACE_WITH_ACTUAL_PUBLIC_KEY"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wireguard-failover
+  namespace: ingress
+  labels:
+    app: wireguard-failover
+    app.kubernetes.io/name: wireguard-failover
+    app.kubernetes.io/component: vpn-tunnel
+    app.kubernetes.io/part-of: mirai-failover
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate  # Only one instance should manage the WireGuard interface
+  selector:
+    matchLabels:
+      app: wireguard-failover
+  template:
+    metadata:
+      labels:
+        app: wireguard-failover
+    spec:
+      # Run on a specific node for consistent IP (optional, but recommended)
+      # Uncomment and set to your preferred node
+      # nodeSelector:
+      #   kubernetes.io/hostname: mac-mini-1
+
+      # Host network mode (needed for WireGuard to work properly)
+      hostNetwork: true
+
+      # Security context for WireGuard
+      securityContext:
+        sysctls:
+        - name: net.ipv4.ip_forward
+          value: "1"
+        - name: net.ipv4.conf.all.src_valid_mark
+          value: "1"
+
+      containers:
+      - name: wireguard
+        image: linuxserver/wireguard:latest
+        imagePullPolicy: IfNotPresent
+
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
+            - SYS_MODULE
+          privileged: true
+
+        env:
+        - name: PUID
+          value: "1000"
+        - name: PGID
+          value: "1000"
+        - name: TZ
+          value: "UTC"
+
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: wireguard-config
+          mountPath: /config/wg0.conf
+          subPath: wg0.conf
+        - name: lib-modules
+          mountPath: /lib/modules
+          readOnly: true
+
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
+
+        # Health checks
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - "wg show wg0 | grep -q interface"
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - "wg show wg0 | grep -q peer && ping -c 1 -W 2 10.100.0.1"
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+      - name: reverse-proxy
+        # Nginx sidecar to proxy from WireGuard network to cluster services
+        image: nginx:alpine
+        imagePullPolicy: IfNotPresent
+
+        ports:
+        - containerPort: 80
+          protocol: TCP
+          name: http
+
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "25m"
+          limits:
+            memory: "64Mi"
+            cpu: "100m"
+
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+
+      volumes:
+      - name: config
+        emptyDir: {}
+      - name: wireguard-config
+        configMap:
+          name: wireguard-config
+      - name: nginx-config
+        configMap:
+          name: wireguard-nginx-config
+      - name: lib-modules
+        hostPath:
+          path: /lib/modules
+          type: Directory
+
+      # Tolerate control-plane taint (since all your nodes are control-plane)
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wireguard-nginx-config
+  namespace: ingress
+data:
+  nginx.conf: |
+    events {
+        worker_connections 1024;
+    }
+
+    http {
+        # Logging
+        access_log /var/log/nginx/access.log;
+        error_log /var/log/nginx/error.log warn;
+
+        # Upstream to mirai-frontend service in default namespace
+        upstream mirai_frontend {
+            server mirai-frontend.default.svc.cluster.local:80;
+            keepalive 32;
+        }
+
+        server {
+            listen 80;
+            server_name _;
+
+            # Health check endpoint
+            location /health {
+                access_log off;
+                return 200 "cluster-wireguard-ok\n";
+                add_header Content-Type text/plain;
+            }
+
+            # Proxy all other requests to frontend service
+            location / {
+                proxy_pass http://mirai_frontend;
+
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+
+                # WebSocket support
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "upgrade";
+
+                # Timeouts
+                proxy_connect_timeout 60s;
+                proxy_send_timeout 60s;
+                proxy_read_timeout 60s;
+            }
+        }
+    }

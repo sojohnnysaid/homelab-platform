@@ -1,0 +1,18 @@
+# Secrets - never commit
+*-secret.yaml
+!*-secret.yaml.template
+credentials.json
+*.key
+*.pem
+
+# Backups
+*.backup
+*.bak
+
+# OS files
+.DS_Store
+
+# Editor files
+*.swp
+*.swo
+*~

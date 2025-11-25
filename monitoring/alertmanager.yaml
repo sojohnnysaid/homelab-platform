@@ -1,0 +1,257 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: monitoring
+data:
+  alertmanager.yml: |
+    global:
+      smtp_smarthost: 'smtp.gmail.com:587'
+      smtp_from: 'cluster-alerts@mirai.sogos.io'
+      smtp_auth_username: 'sojohnnysaid@gmail.com'
+      smtp_auth_password_file: '/etc/alertmanager/secrets/smtp-password'
+      smtp_require_tls: true
+      smtp_hello: 'mirai.sogos.io'
+
+    route:
+      group_by: ['alertname', 'cluster', 'service']
+      group_wait: 10s
+      group_interval: 10s
+      repeat_interval: 24h
+      receiver: 'email-alerts'
+      routes:
+      # Suppress test alerts completely
+      - matchers:
+        - alertname =~ ".*SmokeTest.*|.*Test.*"
+        receiver: 'null'
+
+      # CRITICAL: Immediate notification, repeat every 4 hours until resolved
+      # Also send to webhook for DNS failover automation
+      - matchers:
+        - severity = "critical"
+        receiver: 'email-alerts'
+        group_wait: 30s
+        repeat_interval: 4h
+        continue: true  # Also route to webhook
+      - matchers:
+        - severity = "critical"
+        - alertname =~ "CloudflareTunnelDown|DualFailure"
+        receiver: 'dns-failover-webhook'
+        group_wait: 10s
+        repeat_interval: 30s  # Check every 30s for faster stabilization
+
+      # WARNING: Immediate notification, repeat every 8 hours
+      - matchers:
+        - severity = "warning"
+        receiver: 'email-alerts'
+        group_wait: 1m
+        repeat_interval: 8h
+
+      # INFO - Recovery: Immediate notification, then daily
+      # Also send recovery alerts to webhook for automatic failback
+      - matchers:
+        - severity = "info"
+        - state =~ "recovered|switch_back"
+        receiver: 'email-alerts'
+        group_wait: 1m
+        repeat_interval: 24h
+        continue: true  # Also route to webhook
+      - matchers:
+        - severity = "info"
+        - alertname = "CloudflareTunnelRecovered"
+        receiver: 'dns-failover-webhook'
+        group_wait: 10s
+        repeat_interval: 30s  # Check every 30s for faster failback
+
+      # INFO - Healthy: Daily confirmation that systems are operational
+      - matchers:
+        - severity = "info"
+        - state =~ "healthy|reachable"
+        receiver: 'email-alerts'
+        group_wait: 30s
+        repeat_interval: 24h
+
+    templates:
+    - '/etc/alertmanager/templates/*.tmpl'
+
+    receivers:
+    - name: 'null'
+
+    - name: 'email-alerts'
+      email_configs:
+      - to: 'sojohnnysaid+cluster-alerts@gmail.com'
+        html: '{{ template "email.html" . }}'
+        headers:
+          Subject: '{{ if eq .Status "firing" }}{{ if eq .CommonLabels.severity "critical" }}🔥{{ else if eq .CommonLabels.severity "warning" }}⚠️{{ else if eq .CommonLabels.state "healthy" }}☀️{{ else }}🟢{{ end }}{{ else }}🟢{{ end }} {{ .GroupLabels.alertname }} - {{ .CommonLabels.cluster }}'
+
+    - name: 'dns-failover-webhook'
+      webhook_configs:
+      - url: 'http://dns-failover-controller.ingress.svc.cluster.local/webhook'
+        send_resolved: true
+        http_config:
+          follow_redirects: true
+
+  email.tmpl: |
+    {{ define "email.html" }}
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; }
+        .header { padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .firing { background: linear-gradient(135deg, #d32f2f 0%, #f44336 100%); color: white; }
+        .firing.info { background: linear-gradient(135deg, #388e3c 0%, #4caf50 100%); color: white; }
+        .firing.warning { background: linear-gradient(135deg, #f57c00 0%, #ff9800 100%); color: white; }
+        .resolved { background: linear-gradient(135deg, #388e3c 0%, #4caf50 100%); color: white; }
+        .alert { background: #f5f5f5; border-left: 4px solid #2196f3; padding: 15px; margin-bottom: 15px; border-radius: 4px; }
+        .severity-critical { border-left-color: #d32f2f; }
+        .severity-warning { border-left-color: #ff9800; }
+        .severity-info { border-left-color: #2196f3; }
+        .summary { font-size: 18px; font-weight: bold; margin-bottom: 10px; color: #1a237e; }
+        .description { margin: 10px 0; padding: 10px; background: white; border-radius: 4px; }
+        .labels { margin-top: 15px; }
+        .label { display: inline-block; background: #e3f2fd; padding: 4px 12px; margin: 4px; border-radius: 12px; font-size: 12px; color: #1565c0; }
+        .timestamp { color: #666; font-size: 14px; margin-top: 10px; }
+        h2 { color: #1a237e; border-bottom: 2px solid #2196f3; padding-bottom: 5px; }
+        .footer { margin-top: 30px; padding: 15px; background: #f5f5f5; border-radius: 4px; font-size: 12px; color: #666; }
+        .component { font-weight: bold; color: #1976d2; }
+      </style>
+    </head>
+    <body>
+      <div class="header {{ .Status }} {{ .CommonLabels.severity }}">
+        <h1 style="margin: 0;">
+          {{ if eq .Status "firing" }}
+            {{ if eq .CommonLabels.severity "critical" }}🔥 Critical Alert{{ else if eq .CommonLabels.severity "warning" }}⚠️ Warning Alert{{ else }}🟢 System Healthy{{ end }}
+          {{ else }}🟢 Alert Resolved{{ end }}
+        </h1>
+        <p style="margin: 10px 0 0 0; font-size: 14px; opacity: 0.9;">
+          {{ .Alerts | len }} alert(s) | Cluster: {{ .CommonLabels.cluster }}
+        </p>
+      </div>
+
+      {{ range .Alerts }}
+      <div class="alert severity-{{ .Labels.severity }}">
+        <div class="summary">{{ .Annotations.summary }}</div>
+
+        <div class="description">
+          {{ .Annotations.description }}
+        </div>
+
+        {{ if .Labels.component }}
+        <p><span class="component">Component:</span> {{ .Labels.component }}</p>
+        {{ end }}
+
+        <div class="labels">
+          {{ if .Labels.severity }}<span class="label">⚠️ {{ .Labels.severity | toUpper }}</span>{{ end }}
+          {{ if .Labels.state }}<span class="label">📊 {{ .Labels.state }}</span>{{ end }}
+          {{ if .Labels.instance }}<span class="label">🌐 {{ .Labels.instance }}</span>{{ end }}
+        </div>
+
+        <div class="timestamp">
+          {{ if eq $.Status "firing" }}
+          🕐 Started: {{ .StartsAt.Format "2006-01-02 15:04:05 MST" }}
+          {{ else }}
+          🟢 Resolved: {{ .EndsAt.Format "2006-01-02 15:04:05 MST" }}
+          {{ end }}
+        </div>
+      </div>
+      {{ end }}
+
+      <div class="footer">
+        <strong>Mirai Homelab Monitoring</strong><br>
+        This alert was generated by Prometheus Alertmanager<br>
+        For more details, check your Grafana dashboard or Prometheus UI
+      </div>
+    </body>
+    </html>
+    {{ end }}
+---
+# IMPORTANT: This secret must be created manually - never commit passwords to git
+# Create the secret with:
+#   kubectl create secret generic alertmanager-smtp \
+#     --namespace=monitoring \
+#     --from-literal=smtp-password='$SMTP_PASSWORD'
+#
+# Or apply this template after replacing $SMTP_PASSWORD:
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: alertmanager-smtp
+#   namespace: monitoring
+# type: Opaque
+# stringData:
+#   smtp-password: "$SMTP_PASSWORD"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alertmanager
+  namespace: monitoring
+  labels:
+    app: alertmanager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alertmanager
+  template:
+    metadata:
+      labels:
+        app: alertmanager
+    spec:
+      containers:
+      - name: alertmanager
+        image: prom/alertmanager:v0.27.0
+        args:
+        - '--config.file=/etc/alertmanager/alertmanager.yml'
+        - '--storage.path=/alertmanager'
+        ports:
+        - containerPort: 9093
+          name: http
+        volumeMounts:
+        - name: config
+          mountPath: /etc/alertmanager
+        - name: templates
+          mountPath: /etc/alertmanager/templates
+        - name: smtp-secret
+          mountPath: /etc/alertmanager/secrets
+          readOnly: true
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+      volumes:
+      - name: config
+        configMap:
+          name: alertmanager-config
+          items:
+          - key: alertmanager.yml
+            path: alertmanager.yml
+      - name: templates
+        configMap:
+          name: alertmanager-config
+          items:
+          - key: email.tmpl
+            path: email.tmpl
+      - name: smtp-secret
+        secret:
+          secretName: alertmanager-smtp
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager
+  namespace: monitoring
+  labels:
+    app: alertmanager
+spec:
+  type: ClusterIP
+  ports:
+  - port: 9093
+    targetPort: 9093
+    name: http
+  selector:
+    app: alertmanager

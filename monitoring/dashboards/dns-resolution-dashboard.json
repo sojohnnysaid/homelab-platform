@@ -1,0 +1,26 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "dns-resolution",
+    "title": "DNS Resolution Monitor",
+    "tags": ["dns", "critical"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 0,
+    "refresh": "10s",
+    "panels": [
+      {
+        "id": 1,
+        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+        "type": "stat",
+        "title": "DNS Status",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "up{job=\"coredns\"}"
+          }
+        ]
+      }
+    ]
+  }
+}

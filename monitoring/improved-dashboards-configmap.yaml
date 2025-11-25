@@ -1,0 +1,1161 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: monitoring
+data:
+  # Enhanced DNS Resolution Dashboard
+  dns-resolution-dashboard.json: |
+    {
+      "id": null,
+      "uid": "dns-resolution",
+      "title": "DNS Resolution Monitor",
+      "tags": ["dns", "critical"],
+      "timezone": "browser",
+      "schemaVersion": 16,
+      "version": 0,
+      "refresh": "10s",
+      "time": {"from": "now-1h", "to": "now"},
+      "panels": [
+        {
+          "id": 1,
+          "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+          "type": "stat",
+          "title": "CoreDNS Status",
+          "datasource": "Prometheus",
+          "targets": [{"expr": "up{job=\"coredns\"}", "legendFormat": "CoreDNS"}],
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [
+                {"type": "value", "value": "1", "text": "UP"},
+                {"type": "value", "value": "0", "text": "DOWN"}
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "red", "value": null},
+                  {"color": "red", "value": 0},
+                  {"color": "green", "value": 1}
+                ]
+              },
+              "unit": "short"
+            }
+          }
+        },
+        {
+          "id": 2,
+          "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
+          "type": "stat",
+          "title": "NodeLocal DNS Cache",
+          "datasource": "Prometheus",
+          "targets": [{"expr": "up{job=\"node-local-dns\"}", "legendFormat": "NodeLocal Cache"}],
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [
+                {"type": "value", "value": "1", "text": "UP"},
+                {"type": "value", "value": "0", "text": "DOWN"}
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "red", "value": null},
+                  {"color": "red", "value": 0},
+                  {"color": "green", "value": 1}
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 3,
+          "gridPos": {"x": 12, "y": 0, "w": 6, "h": 4},
+          "type": "stat",
+          "title": "DNS Query Rate",
+          "datasource": "Prometheus",
+          "targets": [{"expr": "sum(rate(coredns_dns_requests_total[5m]))", "legendFormat": "Queries/sec"}],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "green", "value": null},
+                  {"color": "yellow", "value": 100},
+                  {"color": "red", "value": 500}
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 4,
+          "gridPos": {"x": 18, "y": 0, "w": 6, "h": 4},
+          "type": "stat",
+          "title": "Cache Hit Ratio",
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sum(rate(coredns_cache_hits_total[5m])) / (sum(rate(coredns_cache_hits_total[5m])) + sum(rate(coredns_cache_misses_total[5m]))) * 100",
+              "legendFormat": "Hit Ratio %"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "red", "value": null},
+                  {"color": "yellow", "value": 50},
+                  {"color": "green", "value": 80}
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 5,
+          "gridPos": {"x": 0, "y": 4, "w": 12, "h": 8},
+          "type": "graph",
+          "title": "DNS Query Response Time",
+          "datasource": "Prometheus",
+          "targets": [
+            {"expr": "histogram_quantile(0.99, sum(rate(coredns_dns_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p99"},
+            {"expr": "histogram_quantile(0.95, sum(rate(coredns_dns_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p95"},
+            {"expr": "histogram_quantile(0.50, sum(rate(coredns_dns_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p50"}
+          ],
+          "yaxes": [{"format": "s", "label": "Response Time"}, {"format": "short"}],
+          "xaxis": {"mode": "time"}
+        },
+        {
+          "id": 6,
+          "gridPos": {"x": 12, "y": 4, "w": 12, "h": 8},
+          "type": "graph",
+          "title": "DNS Error Rate by Type",
+          "datasource": "Prometheus",
+          "targets": [
+            {"expr": "sum(rate(coredns_dns_responses_total{rcode=\"SERVFAIL\"}[5m]))", "legendFormat": "SERVFAIL"},
+            {"expr": "sum(rate(coredns_dns_responses_total{rcode=\"NXDOMAIN\"}[5m]))", "legendFormat": "NXDOMAIN"},
+            {"expr": "sum(rate(coredns_dns_responses_total{rcode=\"REFUSED\"}[5m]))", "legendFormat": "REFUSED"},
+            {"expr": "sum(rate(coredns_dns_responses_total{rcode=\"FORMERR\"}[5m]))", "legendFormat": "FORMERR"}
+          ],
+          "yaxes": [{"format": "reqps", "label": "Errors/sec"}, {"format": "short"}],
+          "xaxis": {"mode": "time"}
+        },
+        {
+          "id": 7,
+          "gridPos": {"x": 0, "y": 12, "w": 24, "h": 10},
+          "type": "logs",
+          "title": "Recent DNS Errors & Timeouts",
+          "datasource": "Loki",
+          "targets": [{"expr": "{namespace=\"kube-system\"} |~ \"(timeout|error|fail|lookup.*i/o timeout|DNS)\" |~ \"(?i)(dns|resolve|lookup)\""}],
+          "options": {"showTime": true, "showLabels": true, "wrapLogMessage": true}
+        }
+      ]
+    }
+
+  # Enhanced CloudFlare Tunnel Dashboard with Real Metrics
+  cloudflare-tunnel-dashboard.json: |
+    {
+      "id": null,
+      "uid": "cloudflare-tunnel",
+      "title": "CloudFlare Tunnel Health",
+      "tags": ["tunnel", "cloudflare", "ingress"],
+      "timezone": "browser",
+      "schemaVersion": 16,
+      "version": 0,
+      "refresh": "30s",
+      "time": {"from": "now-1h", "to": "now"},
+      "panels": [
+        {
+          "id": 1,
+          "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+          "type": "stat",
+          "title": "HA Connections",
+          "datasource": "Prometheus",
+          "targets": [{"expr": "sum(cloudflared_tunnel_ha_connections)", "legendFormat": "Connections"}],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "red", "value": null},
+                  {"color": "yellow", "value": 1},
+                  {"color": "green", "value": 2}
+                ]
+              },
+              "unit": "short"
+            }
+          }
+        },
+        {
+          "id": 2,
+          "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
+          "type": "stat",
+          "title": "Active TCP Sessions",
+          "datasource": "Prometheus",
+          "targets": [{"expr": "sum(cloudflared_tcp_active_sessions)", "legendFormat": "Sessions"}],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "green", "value": null},
+                  {"color": "yellow", "value": 50},
+                  {"color": "red", "value": 100}
+                ]
+              },
+              "unit": "short"
+            }
+          }
+        },
+        {
+          "id": 3,
+          "gridPos": {"x": 12, "y": 0, "w": 6, "h": 4},
+          "type": "stat",
+          "title": "Request Error Rate",
+          "datasource": "Prometheus",
+          "targets": [{"expr": "sum(rate(cloudflared_tunnel_request_errors[5m]))", "legendFormat": "Errors/sec"}],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "green", "value": null},
+                  {"color": "yellow", "value": 0.1},
+                  {"color": "red", "value": 1}
+                ]
+              },
+              "unit": "reqps"
+            }
+          }
+        },
+        {
+          "id": 4,
+          "gridPos": {"x": 18, "y": 0, "w": 6, "h": 4},
+          "type": "stat",
+          "title": "Tunnel Restarts (24h)",
+          "datasource": "Prometheus",
+          "targets": [{"expr": "sum(increase(kube_pod_container_status_restarts_total{namespace=\"ingress\",pod=~\"cloudflared.*\"}[24h]))", "legendFormat": "Restarts"}],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "green", "value": null},
+                  {"color": "yellow", "value": 1},
+                  {"color": "red", "value": 5}
+                ]
+              },
+              "unit": "short"
+            }
+          }
+        },
+        {
+          "id": 5,
+          "gridPos": {"x": 0, "y": 4, "w": 12, "h": 8},
+          "type": "graph",
+          "title": "Proxy Connection Latency",
+          "datasource": "Prometheus",
+          "targets": [
+            {"expr": "histogram_quantile(0.99, sum(rate(cloudflared_proxy_connect_latency_bucket[5m])) by (le))", "legendFormat": "p99"},
+            {"expr": "histogram_quantile(0.95, sum(rate(cloudflared_proxy_connect_latency_bucket[5m])) by (le))", "legendFormat": "p95"},
+            {"expr": "histogram_quantile(0.50, sum(rate(cloudflared_proxy_connect_latency_bucket[5m])) by (le))", "legendFormat": "p50"}
+          ],
+          "yaxes": [{"format": "s", "label": "Latency"}, {"format": "short"}],
+          "xaxis": {"mode": "time"}
+        },
+        {
+          "id": 6,
+          "gridPos": {"x": 12, "y": 4, "w": 12, "h": 8},
+          "type": "graph",
+          "title": "Response Codes Distribution",
+          "datasource": "Prometheus",
+          "targets": [
+            {"expr": "sum(rate(cloudflared_tunnel_response_by_code{status_code=~\"2..\"}[5m]))", "legendFormat": "2xx Success"},
+            {"expr": "sum(rate(cloudflared_tunnel_response_by_code{status_code=~\"3..\"}[5m]))", "legendFormat": "3xx Redirect"},
+            {"expr": "sum(rate(cloudflared_tunnel_response_by_code{status_code=~\"4..\"}[5m]))", "legendFormat": "4xx Client Error"},
+            {"expr": "sum(rate(cloudflared_tunnel_response_by_code{status_code=~\"5..\"}[5m]))", "legendFormat": "5xx Server Error"}
+          ],
+          "yaxes": [{"format": "reqps", "label": "Responses/sec"}, {"format": "short"}],
+          "xaxis": {"mode": "time"}
+        },
+        {
+          "id": 7,
+          "gridPos": {"x": 0, "y": 12, "w": 12, "h": 8},
+          "type": "graph",
+          "title": "Concurrent Requests per Tunnel",
+          "datasource": "Prometheus",
+          "targets": [{"expr": "cloudflared_tunnel_concurrent_requests_per_tunnel", "legendFormat": "{{pod}}"}],
+          "yaxes": [{"format": "short", "label": "Requests"}, {"format": "short"}],
+          "xaxis": {"mode": "time"}
+        },
+        {
+          "id": 8,
+          "gridPos": {"x": 12, "y": 12, "w": 12, "h": 8},
+          "type": "graph",
+          "title": "RPC Client Latency",
+          "datasource": "Prometheus",
+          "targets": [
+            {"expr": "histogram_quantile(0.99, sum(rate(cloudflared_rpc_client_latency_secs_bucket[5m])) by (le))", "legendFormat": "p99"},
+            {"expr": "histogram_quantile(0.95, sum(rate(cloudflared_rpc_client_latency_secs_bucket[5m])) by (le))", "legendFormat": "p95"},
+            {"expr": "histogram_quantile(0.50, sum(rate(cloudflared_rpc_client_latency_secs_bucket[5m])) by (le))", "legendFormat": "p50"}
+          ],
+          "yaxes": [{"format": "s", "label": "RPC Latency"}, {"format": "short"}],
+          "xaxis": {"mode": "time"}
+        },
+        {
+          "id": 9,
+          "gridPos": {"x": 0, "y": 20, "w": 24, "h": 8},
+          "type": "logs",
+          "title": "Tunnel Connection Errors & Issues",
+          "datasource": "Loki",
+          "targets": [{"expr": "{app=\"cloudflared\"} |~ \"(error|fail|disconnect|Unable to reach|timeout)\" | __error__=\"\""}],
+          "options": {"showTime": true, "showLabels": false, "wrapLogMessage": true, "dedupStrategy": "none"}
+        }
+      ]
+    }
+
+  # New Failover Monitoring Dashboard
+  failover-monitoring-dashboard.json: |
+    {
+      "id": null,
+      "uid": "failover-monitoring",
+      "title": "Ingress Failover Monitor",
+      "tags": ["failover", "ingress", "cloudflare", "vps", "critical"],
+      "timezone": "browser",
+      "schemaVersion": 16,
+      "version": 0,
+      "refresh": "10s",
+      "time": {"from": "now-3h", "to": "now"},
+      "panels": [
+        {
+          "id": 1,
+          "gridPos": {"x": 0, "y": 0, "w": 8, "h": 6},
+          "type": "stat",
+          "title": "Primary Path (Cloudflare Tunnel)",
+          "datasource": "Prometheus",
+          "targets": [{"expr": "probe_success{probe_type=\"public_https\"}", "legendFormat": "Status"}],
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [
+                {"type": "value", "value": "1", "text": "✓ HEALTHY"},
+                {"type": "value", "value": "0", "text": "✗ DOWN"}
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "red", "value": null},
+                  {"color": "red", "value": 0},
+                  {"color": "green", "value": 1}
+                ]
+              },
+              "unit": "short"
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "value_and_name"
+          }
+        },
+        {
+          "id": 2,
+          "gridPos": {"x": 8, "y": 0, "w": 8, "h": 6},
+          "type": "stat",
+          "title": "Failover Path (VPS WireGuard)",
+          "datasource": "Prometheus",
+          "targets": [{"expr": "probe_success{probe_type=\"vps_wireguard\"}", "legendFormat": "Status"}],
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [
+                {"type": "value", "value": "1", "text": "✓ READY"},
+                {"type": "value", "value": "0", "text": "✗ DOWN"}
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "red", "value": null},
+                  {"color": "red", "value": 0},
+                  {"color": "green", "value": 1}
+                ]
+              },
+              "unit": "short"
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "value_and_name"
+          }
+        },
+        {
+          "id": 3,
+          "gridPos": {"x": 16, "y": 0, "w": 8, "h": 6},
+          "type": "stat",
+          "title": "Active Ingress State",
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "probe_success{probe_type=\"public_https\"} == 1",
+              "legendFormat": "Primary Active"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [
+                {"type": "value", "value": "1", "text": "PRIMARY"},
+                {"type": "special", "match": "null", "text": "FAILOVER"}
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "orange", "value": null},
+                  {"color": "green", "value": 1}
+                ]
+              }
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "value"
+          }
+        },
+        {
+          "id": 4,
+          "gridPos": {"x": 0, "y": 6, "w": 12, "h": 8},
+          "type": "graph",
+          "title": "Probe Success Over Time",
+          "datasource": "Prometheus",
+          "targets": [
+            {"expr": "probe_success{probe_type=\"public_https\"}", "legendFormat": "Cloudflare Tunnel (Primary)"},
+            {"expr": "probe_success{probe_type=\"vps_wireguard\"}", "legendFormat": "VPS WireGuard (Failover)"}
+          ],
+          "yaxes": [
+            {"format": "short", "label": "Status (1=UP, 0=DOWN)", "min": 0, "max": 1},
+            {"format": "short"}
+          ],
+          "xaxis": {"mode": "time"},
+          "seriesOverrides": [
+            {"alias": "Cloudflare Tunnel (Primary)", "color": "#73BF69"},
+            {"alias": "VPS WireGuard (Failover)", "color": "#FF9830"}
+          ]
+        },
+        {
+          "id": 5,
+          "gridPos": {"x": 12, "y": 6, "w": 12, "h": 8},
+          "type": "graph",
+          "title": "Probe Latency Comparison",
+          "datasource": "Prometheus",
+          "targets": [
+            {"expr": "probe_duration_seconds{probe_type=\"public_https\"}", "legendFormat": "Cloudflare Tunnel"},
+            {"expr": "probe_duration_seconds{probe_type=\"vps_wireguard\"}", "legendFormat": "VPS WireGuard"}
+          ],
+          "yaxes": [{"format": "s", "label": "Latency"}, {"format": "short"}],
+          "xaxis": {"mode": "time"},
+          "seriesOverrides": [
+            {"alias": "Cloudflare Tunnel", "color": "#73BF69"},
+            {"alias": "VPS WireGuard", "color": "#FF9830"}
+          ],
+          "alert": {
+            "conditions": [
+              {
+                "evaluator": {"params": [2], "type": "gt"},
+                "query": {"params": ["A", "5m", "now"]},
+                "type": "query"
+              }
+            ]
+          }
+        },
+        {
+          "id": 6,
+          "gridPos": {"x": 0, "y": 14, "w": 8, "h": 4},
+          "type": "stat",
+          "title": "Cloudflare Tunnel Pods",
+          "datasource": "Prometheus",
+          "targets": [{"expr": "sum(up{job=\"cloudflared\"})", "legendFormat": "Active Pods"}],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "red", "value": null},
+                  {"color": "yellow", "value": 1},
+                  {"color": "green", "value": 2}
+                ]
+              },
+              "unit": "short"
+            }
+          }
+        },
+        {
+          "id": 7,
+          "gridPos": {"x": 8, "y": 14, "w": 8, "h": 4},
+          "type": "stat",
+          "title": "Primary Path Uptime (24h)",
+          "datasource": "Prometheus",
+          "targets": [{"expr": "avg_over_time(probe_success{probe_type=\"public_https\"}[24h]) * 100", "legendFormat": "Uptime %"}],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "decimals": 2,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "red", "value": null},
+                  {"color": "orange", "value": 95},
+                  {"color": "yellow", "value": 99},
+                  {"color": "green", "value": 99.9}
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 8,
+          "gridPos": {"x": 16, "y": 14, "w": 8, "h": 4},
+          "type": "stat",
+          "title": "Failover Path Uptime (24h)",
+          "datasource": "Prometheus",
+          "targets": [{"expr": "avg_over_time(probe_success{probe_type=\"vps_wireguard\"}[24h]) * 100", "legendFormat": "Uptime %"}],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "decimals": 2,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "red", "value": null},
+                  {"color": "orange", "value": 95},
+                  {"color": "yellow", "value": 99},
+                  {"color": "green", "value": 99.9}
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 9,
+          "gridPos": {"x": 0, "y": 18, "w": 24, "h": 10},
+          "type": "logs",
+          "title": "Failover Events & Tunnel Issues",
+          "datasource": "Loki",
+          "targets": [
+            {"expr": "{app=\"cloudflared\"} |~ \"(error|fail|disconnect|reconnect|Unable to reach)\""},
+            {"expr": "{namespace=\"ingress\",pod=~\"wireguard.*\"} |~ \"(error|fail|timeout)\""}
+          ],
+          "options": {"showTime": true, "showLabels": true, "wrapLogMessage": true}
+        }
+      ]
+    }
+
+  # Control Plane Stability Dashboard
+  control-plane-dashboard.json: |
+    {
+      "id": null,
+      "uid": "control-plane",
+      "title": "Control Plane Stability (Talos)",
+      "tags": ["control-plane", "stability", "talos"],
+      "timezone": "browser",
+      "schemaVersion": 16,
+      "version": 0,
+      "refresh": "30s",
+      "time": {"from": "now-6h", "to": "now"},
+      "panels": [
+        {
+          "id": 1,
+          "gridPos": {"x": 0, "y": 0, "w": 8, "h": 4},
+          "type": "stat",
+          "title": "API Server Instances",
+          "datasource": "Prometheus",
+          "targets": [{"expr": "count(up{job=\"kubernetes-apiservers\"} == 1)", "legendFormat": "Active"}],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "red", "value": null},
+                  {"color": "yellow", "value": 1},
+                  {"color": "green", "value": 3}
+                ]
+              },
+              "unit": "short"
+            }
+          }
+        },
+        {
+          "id": 2,
+          "gridPos": {"x": 8, "y": 0, "w": 8, "h": 4},
+          "type": "stat",
+          "title": "API Server Requests/sec",
+          "datasource": "Prometheus",
+          "targets": [{"expr": "sum(rate(apiserver_request_total[5m]))", "legendFormat": "Requests"}],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "green", "value": null},
+                  {"color": "yellow", "value": 100},
+                  {"color": "red", "value": 500}
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 3,
+          "gridPos": {"x": 16, "y": 0, "w": 8, "h": 4},
+          "type": "stat",
+          "title": "Kubelet Nodes Ready",
+          "datasource": "Prometheus",
+          "targets": [{"expr": "sum(kube_node_status_condition{condition=\"Ready\",status=\"true\"})", "legendFormat": "Ready"}],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "red", "value": null},
+                  {"color": "yellow", "value": 2},
+                  {"color": "green", "value": 3}
+                ]
+              },
+              "unit": "short"
+            }
+          }
+        },
+        {
+          "id": 5,
+          "gridPos": {"x": 0, "y": 4, "w": 12, "h": 8},
+          "type": "graph",
+          "title": "API Server Request Latency",
+          "datasource": "Prometheus",
+          "targets": [
+            {"expr": "histogram_quantile(0.99, sum(rate(apiserver_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p99"},
+            {"expr": "histogram_quantile(0.95, sum(rate(apiserver_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p95"},
+            {"expr": "histogram_quantile(0.50, sum(rate(apiserver_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p50"}
+          ],
+          "yaxes": [{"format": "s", "label": "Latency"}, {"format": "short"}],
+          "xaxis": {"mode": "time"}
+        },
+        {
+          "id": 6,
+          "gridPos": {"x": 12, "y": 4, "w": 12, "h": 8},
+          "type": "graph",
+          "title": "API Server Request Rate by Verb",
+          "datasource": "Prometheus",
+          "targets": [
+            {"expr": "sum(rate(apiserver_request_total[5m])) by (verb)", "legendFormat": "{{verb}}"}
+          ],
+          "yaxes": [{"format": "reqps", "label": "Requests/sec"}, {"format": "short"}],
+          "xaxis": {"mode": "time"}
+        },
+        {
+          "id": 7,
+          "gridPos": {"x": 0, "y": 12, "w": 24, "h": 8},
+          "type": "logs",
+          "title": "Kubernetes System Errors",
+          "datasource": "Loki",
+          "targets": [
+            {"expr": "{namespace=\"kube-system\"} |~ \"(error|ERROR|fail|FAIL|panic|fatal|warning|WARNING)\""}
+          ],
+          "options": {"showTime": true, "showLabels": true, "wrapLogMessage": true}
+        }
+      ]
+    }
+
+  # Pod Memory Pressure Dashboard
+  memory-pressure-dashboard.json: |
+    {
+      "id": null,
+      "uid": "memory-pressure",
+      "title": "Pod Memory Pressure",
+      "tags": ["memory", "resources", "oom"],
+      "timezone": "browser",
+      "schemaVersion": 16,
+      "version": 0,
+      "refresh": "30s",
+      "time": {"from": "now-3h", "to": "now"},
+      "templating": {
+        "list": [
+          {
+            "name": "namespace",
+            "type": "query",
+            "datasource": "Prometheus",
+            "query": "label_values(kube_pod_info, namespace)",
+            "current": {
+              "text": "default",
+              "value": "default"
+            },
+            "includeAll": false,
+            "multi": false,
+            "refresh": 1
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1,
+          "gridPos": {"x": 0, "y": 0, "w": 8, "h": 4},
+          "type": "stat",
+          "title": "Total Memory Usage",
+          "datasource": "Prometheus",
+          "targets": [{"expr": "sum(container_memory_working_set_bytes{namespace=\"$namespace\",container!=\"\",container!=\"POD\"}) / 1024 / 1024 / 1024", "legendFormat": "Total GB"}],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "decgbytes",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "green", "value": null},
+                  {"color": "yellow", "value": 2},
+                  {"color": "red", "value": 4}
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 2,
+          "gridPos": {"x": 8, "y": 0, "w": 8, "h": 4},
+          "type": "stat",
+          "title": "OOMKilled Pods (24h)",
+          "datasource": "Prometheus",
+          "targets": [{"expr": "sum(increase(kube_pod_container_status_terminated_reason{namespace=\"$namespace\",reason=\"OOMKilled\"}[24h]))", "legendFormat": "OOM Kills"}],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "green", "value": null},
+                  {"color": "yellow", "value": 1},
+                  {"color": "red", "value": 5}
+                ]
+              },
+              "unit": "short"
+            }
+          }
+        },
+        {
+          "id": 3,
+          "gridPos": {"x": 16, "y": 0, "w": 8, "h": 4},
+          "type": "stat",
+          "title": "Memory Pressure Nodes",
+          "datasource": "Prometheus",
+          "targets": [{"expr": "sum(kube_node_status_condition{condition=\"MemoryPressure\",status=\"true\"})", "legendFormat": "Nodes"}],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "green", "value": null},
+                  {"color": "green", "value": 0},
+                  {"color": "red", "value": 1}
+                ]
+              },
+              "unit": "short"
+            }
+          }
+        },
+        {
+          "id": 4,
+          "gridPos": {"x": 0, "y": 4, "w": 12, "h": 8},
+          "type": "graph",
+          "title": "Memory Usage vs Limits",
+          "datasource": "Prometheus",
+          "targets": [
+            {"expr": "container_memory_working_set_bytes{namespace=\"$namespace\",container!=\"\",container!=\"POD\"}", "legendFormat": "{{pod}}/{{container}} - Usage"},
+            {"expr": "kube_pod_container_resource_limits{namespace=\"$namespace\",resource=\"memory\",container!=\"\"}", "legendFormat": "{{pod}}/{{container}} - Limit"}
+          ],
+          "yaxes": [{"format": "bytes", "label": "Memory"}, {"format": "short"}],
+          "xaxis": {"mode": "time"},
+          "seriesOverrides": [{"alias": "/-Limit/", "dashes": true}]
+        },
+        {
+          "id": 5,
+          "gridPos": {"x": 12, "y": 4, "w": 12, "h": 8},
+          "type": "graph",
+          "title": "Memory Usage % of Limit",
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "(container_memory_working_set_bytes{namespace=\"$namespace\",container!=\"\",container!=\"POD\"} / on(namespace,pod,container) kube_pod_container_resource_limits{namespace=\"$namespace\",resource=\"memory\"}) * 100",
+              "legendFormat": "{{pod}}/{{container}}"
+            }
+          ],
+          "yaxes": [{"format": "percent", "label": "% of Limit", "max": 100}, {"format": "short"}],
+          "xaxis": {"mode": "time"},
+          "thresholds": [
+            {"value": 80, "colorMode": "critical", "op": "gt", "fill": true, "line": true}
+          ]
+        },
+        {
+          "id": 6,
+          "gridPos": {"x": 0, "y": 12, "w": 24, "h": 8},
+          "type": "table",
+          "title": "Top Memory Consumers",
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "topk(10, container_memory_working_set_bytes{container!=\"\",container!=\"POD\"})",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {"Time": true, "__name__": true, "job": true, "instance": true, "id": true, "image": true},
+                "renameByName": {"Value": "Memory (bytes)", "namespace": "Namespace", "pod": "Pod", "container": "Container"}
+              }
+            }
+          ]
+        },
+        {
+          "id": 7,
+          "gridPos": {"x": 0, "y": 20, "w": 24, "h": 8},
+          "type": "logs",
+          "title": "OOM Events & Memory Errors",
+          "datasource": "Loki",
+          "targets": [{"expr": "{namespace=\"$namespace\"} |~ \"(OOM|OOMKilled|out of memory|memory limit|Cannot allocate memory)\""}],
+          "options": {"showTime": true, "showLabels": true, "wrapLogMessage": true}
+        }
+      ]
+    }
+
+  # Network Connectivity Dashboard
+  network-connectivity-dashboard.json: |
+    {
+      "id": null,
+      "uid": "network-connectivity",
+      "title": "Network Connectivity",
+      "tags": ["network", "connectivity", "latency"],
+      "timezone": "browser",
+      "schemaVersion": 16,
+      "version": 0,
+      "refresh": "30s",
+      "time": {"from": "now-3h", "to": "now"},
+      "panels": [
+        {
+          "id": 1,
+          "gridPos": {"x": 0, "y": 0, "w": 8, "h": 4},
+          "type": "stat",
+          "title": "Network Error Rate",
+          "datasource": "Prometheus",
+          "targets": [{"expr": "sum(rate(node_network_receive_errs_total[5m])) + sum(rate(node_network_transmit_errs_total[5m]))", "legendFormat": "Errors/sec"}],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 2,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "green", "value": null},
+                  {"color": "yellow", "value": 0.1},
+                  {"color": "red", "value": 1}
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 2,
+          "gridPos": {"x": 8, "y": 0, "w": 8, "h": 4},
+          "type": "stat",
+          "title": "Packet Drop Rate",
+          "datasource": "Prometheus",
+          "targets": [{"expr": "sum(rate(node_network_receive_drop_total[5m])) + sum(rate(node_network_transmit_drop_total[5m]))", "legendFormat": "Drops/sec"}],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 2,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "green", "value": null},
+                  {"color": "yellow", "value": 0.1},
+                  {"color": "red", "value": 1}
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 3,
+          "gridPos": {"x": 16, "y": 0, "w": 8, "h": 4},
+          "type": "stat",
+          "title": "Active TCP Connections",
+          "datasource": "Prometheus",
+          "targets": [{"expr": "sum(node_netstat_Tcp_CurrEstab)", "legendFormat": "Connections"}],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "green", "value": null},
+                  {"color": "yellow", "value": 1000},
+                  {"color": "red", "value": 5000}
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 4,
+          "gridPos": {"x": 0, "y": 4, "w": 12, "h": 8},
+          "type": "graph",
+          "title": "Network Traffic by Node",
+          "datasource": "Prometheus",
+          "targets": [
+            {"expr": "sum(rate(node_network_receive_bytes_total{device!~\"lo|veth.*|cali.*|flannel.*\"}[5m])) by (instance)", "legendFormat": "{{instance}} - RX"},
+            {"expr": "sum(rate(node_network_transmit_bytes_total{device!~\"lo|veth.*|cali.*|flannel.*\"}[5m])) by (instance)", "legendFormat": "{{instance}} - TX"}
+          ],
+          "yaxes": [{"format": "Bps", "label": "Traffic"}, {"format": "short"}],
+          "xaxis": {"mode": "time"}
+        },
+        {
+          "id": 5,
+          "gridPos": {"x": 12, "y": 4, "w": 12, "h": 8},
+          "type": "graph",
+          "title": "Service Endpoint Availability",
+          "datasource": "Prometheus",
+          "targets": [{"expr": "kube_endpoint_address_available{namespace=\"default\"}", "legendFormat": "{{namespace}}/{{endpoint}}"}],
+          "yaxes": [{"format": "short", "label": "Available Endpoints"}, {"format": "short"}],
+          "xaxis": {"mode": "time"}
+        },
+        {
+          "id": 6,
+          "gridPos": {"x": 0, "y": 12, "w": 24, "h": 10},
+          "type": "logs",
+          "title": "Network Timeouts & Connection Errors",
+          "datasource": "Loki",
+          "targets": [
+            {"expr": "{namespace=~\"default|kube-system\"} |~ \"(timeout|i/o timeout|connection refused|connection reset|no route to host|network unreachable)\""}
+          ],
+          "options": {"showTime": true, "showLabels": true, "wrapLogMessage": true, "dedupStrategy": "signature"}
+        }
+      ]
+    }
+
+  # New Cluster Overview Dashboard
+  cluster-overview-dashboard.json: |
+    {
+      "id": null,
+      "uid": "cluster-overview",
+      "title": "Cluster Overview",
+      "tags": ["cluster", "overview", "talos"],
+      "timezone": "browser",
+      "schemaVersion": 16,
+      "version": 0,
+      "refresh": "30s",
+      "time": {"from": "now-6h", "to": "now"},
+      "panels": [
+        {
+          "id": 1,
+          "gridPos": {"x": 0, "y": 0, "w": 8, "h": 4},
+          "type": "stat",
+          "title": "Cluster Nodes",
+          "datasource": "Prometheus",
+          "targets": [{"expr": "count(kube_node_info)", "legendFormat": "Total Nodes"}],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "red", "value": null},
+                  {"color": "yellow", "value": 1},
+                  {"color": "green", "value": 3}
+                ]
+              },
+              "unit": "short"
+            }
+          }
+        },
+        {
+          "id": 2,
+          "gridPos": {"x": 8, "y": 0, "w": 8, "h": 4},
+          "type": "stat",
+          "title": "Ready Nodes",
+          "datasource": "Prometheus",
+          "targets": [{"expr": "sum(kube_node_status_condition{condition=\"Ready\",status=\"true\"})", "legendFormat": "Ready"}],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "red", "value": null},
+                  {"color": "yellow", "value": 2},
+                  {"color": "green", "value": 3}
+                ]
+              },
+              "unit": "short"
+            }
+          }
+        },
+        {
+          "id": 3,
+          "gridPos": {"x": 16, "y": 0, "w": 8, "h": 4},
+          "type": "stat",
+          "title": "Total Pods",
+          "datasource": "Prometheus",
+          "targets": [{"expr": "sum(kube_pod_info)", "legendFormat": "Pods"}],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "green", "value": null},
+                  {"color": "yellow", "value": 50},
+                  {"color": "red", "value": 100}
+                ]
+              },
+              "unit": "short"
+            }
+          }
+        },
+        {
+          "id": 4,
+          "gridPos": {"x": 0, "y": 4, "w": 24, "h": 6},
+          "type": "table",
+          "title": "Node Status",
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "kube_node_info",
+              "format": "table",
+              "instant": true
+            },
+            {
+              "expr": "kube_node_status_condition{condition=\"Ready\"}",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "transformations": [
+            {
+              "id": "merge"
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {"Time": true, "__name__": true, "job": true, "instance": true, "condition": true},
+                "renameByName": {
+                  "node": "Node",
+                  "kernel_version": "Kernel",
+                  "os_image": "OS",
+                  "kubelet_version": "Kubelet",
+                  "status": "Ready",
+                  "Value": "Status"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "gridPos": {"x": 0, "y": 10, "w": 12, "h": 8},
+          "type": "graph",
+          "title": "CPU Usage by Node",
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "100 - (avg by (instance) (irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+              "legendFormat": "{{instance}}"
+            }
+          ],
+          "yaxes": [{"format": "percent", "label": "CPU Usage", "max": 100, "min": 0}, {"format": "short"}],
+          "xaxis": {"mode": "time"}
+        },
+        {
+          "id": 6,
+          "gridPos": {"x": 12, "y": 10, "w": 12, "h": 8},
+          "type": "graph",
+          "title": "Memory Usage by Node",
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes))",
+              "legendFormat": "{{instance}}"
+            }
+          ],
+          "yaxes": [{"format": "percent", "label": "Memory Usage", "max": 100, "min": 0}, {"format": "short"}],
+          "xaxis": {"mode": "time"}
+        },
+        {
+          "id": 7,
+          "gridPos": {"x": 0, "y": 18, "w": 12, "h": 8},
+          "type": "table",
+          "title": "Pod Count by Namespace",
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sum(kube_pod_info) by (namespace)",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {"Time": true, "__name__": true, "job": true, "instance": true},
+                "renameByName": {"namespace": "Namespace", "Value": "Pod Count"}
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "fields": {},
+                "sort": [{"field": "Pod Count", "desc": true}]
+              }
+            }
+          ]
+        },
+        {
+          "id": 8,
+          "gridPos": {"x": 12, "y": 18, "w": 12, "h": 8},
+          "type": "graph",
+          "title": "Network I/O by Node",
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sum(rate(node_network_receive_bytes_total{device!~\"lo|veth.*|cali.*|flannel.*\"}[5m])) by (instance)",
+              "legendFormat": "{{instance}} RX"
+            },
+            {
+              "expr": "-(sum(rate(node_network_transmit_bytes_total{device!~\"lo|veth.*|cali.*|flannel.*\"}[5m])) by (instance))",
+              "legendFormat": "{{instance}} TX"
+            }
+          ],
+          "yaxes": [{"format": "Bps", "label": "Network I/O"}, {"format": "short"}],
+          "xaxis": {"mode": "time"}
+        },
+        {
+          "id": 9,
+          "gridPos": {"x": 0, "y": 26, "w": 24, "h": 8},
+          "type": "table",
+          "title": "Pod Distribution Across Nodes",
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "count(kube_pod_info{namespace!=\"kube-system\"}) by (node)",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {"Time": true, "__name__": true, "job": true, "instance": true},
+                "renameByName": {"node": "Node", "Value": "Pod Count"}
+              }
+            }
+          ]
+        }
+      ]
+    }

@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - prometheus-config.yaml
+  - grafana.yaml
+  - alertmanager.yaml
+  - alert-rules.yaml
+  - failover-alert-rules.yaml
+  - loki-stack.yaml
+  - node-exporter.yaml
+  - kube-state-metrics.yaml
+  - blackbox-exporter.yaml
+  - persistent-volumes.yaml
+  - dashboards-configmap.yaml
+  - enhanced-dashboards-configmap.yaml

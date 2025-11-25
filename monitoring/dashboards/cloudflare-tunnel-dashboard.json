@@ -1,0 +1,26 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "cloudflare-tunnel",
+    "title": "CloudFlare Tunnel Health",
+    "tags": ["tunnel", "cloudflare"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 0,
+    "refresh": "30s",
+    "panels": [
+      {
+        "id": 1,
+        "gridPos": {"x": 0, "y": 0, "w": 24, "h": 8},
+        "type": "logs",
+        "title": "Tunnel Errors",
+        "datasource": "Loki",
+        "targets": [
+          {
+            "expr": "{app=\"cloudflared\"} |~ \"error\""
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,83 @@
+# NFS Subdir External Provisioner Configuration
+# For Unraid NFS share at 192.168.1.226
+
+nfs:
+  server: 192.168.1.226
+  path: /mnt/user/k8s-nfs
+  mountOptions:
+    - nfsvers=4
+    - hard
+    - nolock
+
+storageClass:
+  create: true
+  provisionerName: k8s-nfs-provisioner
+  defaultClass: false  # Don't set as default initially
+  name: nfs-client
+  allowVolumeExpansion: true
+  reclaimPolicy: Delete
+  archiveOnDelete: true  # Move to archived folder instead of deleting
+  accessModes: ReadWriteMany
+  volumeBindingMode: Immediate
+  annotations: {}
+
+# Resource limits for the provisioner pod
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+# Security context for the provisioner
+podSecurityContext:
+  fsGroup: 2000
+  runAsNonRoot: true
+  runAsUser: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1000
+
+# Node selector if needed
+nodeSelector: {}
+
+# Tolerations if needed
+tolerations: []
+
+# Affinity rules if needed
+affinity: {}
+
+# Service account
+serviceAccount:
+  create: true
+  name: nfs-provisioner
+
+# RBAC
+rbac:
+  create: true
+
+# Pod annotations
+podAnnotations: {}
+
+# Labels
+labels: {}
+
+# Image configuration
+image:
+  repository: registry.k8s.io/sig-storage/nfs-subdir-external-provisioner
+  tag: v4.0.2
+  pullPolicy: IfNotPresent
+
+# Namespace
+namespace: default
+
+# Enable leader election for HA
+leaderElection:
+  enabled: true

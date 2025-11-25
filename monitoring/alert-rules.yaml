@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-alert-rules
+  namespace: monitoring
+data:
+  alert.rules.yml: |
+    groups:
+    - name: smoke_test
+      interval: 10s
+      rules:
+      - alert: EmailSmokeTestV2
+        expr: vector(1)
+        for: 0s
+        labels:
+          severity: info
+          cluster: homelab
+        annotations:
+          summary: "SMTP Email Smoke Test V2"
+          description: "This is a test alert to verify Alertmanager can send emails via smtp.gmail.com:587. If you receive this, the alerting system is working correctly with hostname-based SMTP."

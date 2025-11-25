@@ -1,0 +1,14 @@
+# Service to expose Grafana internally for CloudFlare tunnel access
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-lb
+  namespace: monitoring
+spec:
+  selector:
+    app: grafana
+  ports:
+  - port: 80
+    targetPort: 3000
+    name: http
+  type: ClusterIP
