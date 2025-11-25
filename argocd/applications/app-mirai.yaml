@@ -10,7 +10,7 @@ metadata:
 spec:
   project: applications
   source:
-    repoURL: https://github.com/sojohnnysaid/mirai-app.git
+    repoURL: https://github.com/Sogos-LLC/mirai-app.git
     targetRevision: main
     path: k8s/frontend
   destination:
@@ -42,7 +42,7 @@ metadata:
 spec:
   project: applications
   source:
-    repoURL: https://github.com/sojohnnysaid/mirai-app.git
+    repoURL: https://github.com/Sogos-LLC/mirai-app.git
     targetRevision: main
     path: k8s/backend
   destination:
@@ -74,7 +74,7 @@ metadata:
 spec:
   project: applications
   source:
-    repoURL: https://github.com/sojohnnysaid/mirai-app.git
+    repoURL: https://github.com/Sogos-LLC/mirai-app.git
     targetRevision: main
     path: k8s/frontend-marketing
   destination:
