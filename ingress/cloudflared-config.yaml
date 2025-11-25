@@ -12,7 +12,7 @@ data:
       - hostname: mirai.sogos.io
         service: http://mirai-frontend.mirai.svc.cluster.local:80
       - hostname: get-mirai.sogos.io
-        service: http://mirai-frontend.mirai.svc.cluster.local:80
+        service: http://mirai-marketing.mirai.svc.cluster.local:80
       - hostname: mirai-api.sogos.io
         service: http://mirai-backend.mirai.svc.cluster.local:8080
       # Ory Kratos Authentication
