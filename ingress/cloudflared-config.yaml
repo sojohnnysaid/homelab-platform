@@ -15,5 +15,5 @@ data:
       - hostname: grafana.sogos.io
         service: http://grafana.monitoring.svc.cluster.local:3000
       - hostname: hello.sogos.io
-        service: http://hello-world.default.svc.cluster.local:80
+        service: http://hello-world.static-sites.svc.cluster.local:80
       - service: http_status:404
