@@ -8,15 +8,7 @@ spec:
   sourceRepos:
     - 'https://github.com/sojohnnysaid/homelab-platform.git'
   destinations:
-    - namespace: monitoring
-      server: https://kubernetes.default.svc
-    - namespace: ingress
-      server: https://kubernetes.default.svc
-    - namespace: argocd
-      server: https://kubernetes.default.svc
-    - namespace: default
-      server: https://kubernetes.default.svc
-    - namespace: mirai
+    - namespace: '*'
       server: https://kubernetes.default.svc
   clusterResourceWhitelist:
     - group: ''
