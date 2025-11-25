@@ -115,6 +115,10 @@ spec:
       labels:
         app: grafana
     spec:
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
       securityContext:
         fsGroup: 472
         runAsNonRoot: true
@@ -408,6 +412,10 @@ spec:
       labels:
         app: prometheus
     spec:
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
       serviceAccountName: prometheus
       securityContext:
         fsGroup: 65534
