@@ -13,8 +13,10 @@ data:
         service: http://mirai-frontend.mirai.svc.cluster.local:80
       - hostname: get-mirai.sogos.io
         service: http://mirai-frontend.mirai.svc.cluster.local:80
+      - hostname: mirai-api.sogos.io
+        service: http://mirai-backend.mirai.svc.cluster.local:8080
       # Ory Kratos Authentication
-      - hostname: auth.sogos.io
+      - hostname: mirai-auth.sogos.io
         service: http://kratos-public.kratos.svc.cluster.local:80
       # MailHog Email Testing (dev only)
       - hostname: mailhog.sogos.io
