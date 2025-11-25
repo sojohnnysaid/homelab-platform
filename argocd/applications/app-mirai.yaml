@@ -12,7 +12,7 @@ spec:
   source:
     repoURL: https://github.com/sojohnnysaid/mirai-app.git
     targetRevision: main
-    path: k8s
+    path: k8s/frontend
   destination:
     server: https://kubernetes.default.svc
     namespace: mirai
@@ -29,8 +29,35 @@ spec:
         duration: 5s
         factor: 2
         maxDuration: 3m
-  ignoreDifferences:
-    - group: apps
-      kind: Deployment
-      jsonPointers:
-        - /spec/template/spec/containers/0/image
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mirai-backend
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: applications
+  source:
+    repoURL: https://github.com/sojohnnysaid/mirai-app.git
+    targetRevision: main
+    path: k8s/backend
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mirai
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=false
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
