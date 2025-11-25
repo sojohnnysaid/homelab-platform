@@ -18,9 +18,9 @@ data:
       # Ory Kratos Authentication
       - hostname: mirai-auth.sogos.io
         service: http://kratos-public.kratos.svc.cluster.local:80
-      # MailHog Email Testing (dev only)
-      - hostname: mailhog.sogos.io
-        service: http://mailhog.mailhog.svc.cluster.local:8025
+      # Mailpit Email Testing (dev only)
+      - hostname: mailpit.sogos.io
+        service: http://mailpit.default.svc.cluster.local:8025
       # Other services
       - hostname: argocd.sogos.io
         service: http://argocd-server.argocd.svc.cluster.local:80
