@@ -213,12 +213,176 @@ metadata:
   name: prometheus-config
   namespace: monitoring
 data:
+  alert.rules.yml: |
+    groups:
+    - name: smoke_test
+      interval: 10s
+      rules:
+      - alert: EmailSmokeTestV2
+        expr: vector(1)
+        for: 0s
+        labels:
+          severity: info
+          cluster: homelab
+        annotations:
+          summary: "SMTP Email Smoke Test V2"
+          description: "This is a test alert to verify Alertmanager can send emails via smtp.gmail.com:587. If you receive this, the alerting system is working correctly with hostname-based SMTP."
+
+  failover.rules.yml: |
+    groups:
+    - name: failover_monitoring
+      interval: 10s
+      rules:
+      # Cloudflare Tunnel States
+      - alert: CloudflareTunnelHealthy
+        expr: |
+          (probe_success{probe_type="public_https"} == 1
+          unless
+          (count(up{job="cloudflared"} == 1) < 2))
+          and on()
+          (hour() >= 11 and hour() < 11.25)
+        for: 30s
+        labels:
+          severity: info
+          component: cloudflare-tunnel
+          state: healthy
+        annotations:
+          summary: "Cloudflare Tunnel is Healthy"
+          description: "Cloudflare Tunnel has {{ $value }} healthy connections and public HTTPS probe is successful. Primary ingress path is operational. Daily health check at 6:00 AM EST."
+
+      - alert: CloudflareTunnelDegraded
+        expr: |
+          (
+            (count(up{job="cloudflared"} == 1) < 2 and count(up{job="cloudflared"} == 1) >= 1)
+            or
+            (probe_success{probe_type="public_https"} == 1 and probe_duration_seconds{probe_type="public_https"} > 2)
+          )
+        for: 15s
+        labels:
+          severity: warning
+          component: cloudflare-tunnel
+          state: degraded
+        annotations:
+          summary: "Cloudflare Tunnel is Degraded"
+          description: "Cloudflare Tunnel has reduced capacity ({{ $value }} healthy pods) or high latency. Performance may be impacted."
+
+      - alert: CloudflareTunnelDown
+        expr: |
+          (count(up{job="cloudflared"} == 1) or vector(0)) < 1
+          or
+          probe_success{probe_type="public_https"} == 0
+        for: 15s
+        labels:
+          severity: critical
+          component: cloudflare-tunnel
+          state: down
+        annotations:
+          summary: "Cloudflare Tunnel is DOWN"
+          description: "Cloudflare Tunnel has been down for more than 15 seconds. All cloudflared pods are offline or public HTTPS probe is failing. Failover to VPS should be active."
+
+      # WireGuard VPS Failover States
+      - alert: WireGuardFailoverReachable
+        expr: probe_success{probe_type="vps_wireguard"} == 1
+        for: 30s
+        labels:
+          severity: info
+          component: vps-failover
+          state: reachable
+        annotations:
+          summary: "WireGuard VPS Failover is Reachable"
+          description: "WireGuard tunnel and VPS nginx are responding successfully. Failover path is available."
+
+      - alert: WireGuardFailoverDegraded
+        expr: |
+          probe_success{probe_type="vps_wireguard"} == 1
+          and
+          probe_duration_seconds{probe_type="vps_wireguard"} > 1
+        for: 15s
+        labels:
+          severity: warning
+          component: vps-failover
+          state: degraded
+        annotations:
+          summary: "WireGuard VPS Failover is Degraded"
+          description: "VPS failover path has high latency ({{ $value }}s). Response time exceeds normal thresholds."
+
+      - alert: WireGuardFailoverUnreachable
+        expr: probe_success{probe_type="vps_wireguard"} == 0
+        for: 15s
+        labels:
+          severity: critical
+          component: vps-failover
+          state: unreachable
+        annotations:
+          summary: "WireGuard VPS Failover is UNREACHABLE"
+          description: "WireGuard tunnel or VPS nginx is not responding. Failover path is unavailable. Check WireGuard tunnel and VPS health."
+
+      # Dual Failure State
+      - alert: DualFailure
+        expr: |
+          (probe_success{probe_type="public_https"} == 0 or count(up{job="cloudflared"} == 1) == 0)
+          and on()
+          probe_success{probe_type="vps_wireguard"} == 0
+        for: 15s
+        labels:
+          severity: critical
+          component: all-paths
+          state: dual_failure
+        annotations:
+          summary: "DUAL FAILURE - All Ingress Paths Down"
+          description: "CRITICAL: Both Cloudflare Tunnel AND VPS failover are unreachable. mirai.sogos.io is completely offline. Immediate action required."
+
+      # Recovery Events
+      - alert: CloudflareTunnelRecovered
+        expr: |
+          probe_success{probe_type="public_https"} == 1
+          unless
+          (count(up{job="cloudflared"} == 1) < 2)
+          unless
+          (count(up{job="cloudflared"} offset 5m == 1) >= 2 and probe_success{probe_type="public_https"} offset 5m == 1)
+        for: 30s
+        labels:
+          severity: info
+          component: cloudflare-tunnel
+          state: recovered
+        annotations:
+          summary: "Cloudflare Tunnel has RECOVERED"
+          description: "Cloudflare Tunnel is now healthy after previous failure. Cloudflared pods are running and public HTTPS probe is successful."
+
+      - alert: TrafficSwitchBackToCloudflare
+        expr: |
+          probe_success{probe_type="public_https"} == 1
+          unless
+          (count(up{job="cloudflared"} == 1) < 2)
+          unless
+          (probe_success{probe_type="vps_wireguard"} == 0)
+          unless
+          (count(up{job="cloudflared"} offset 10m == 1) >= 2 and probe_success{probe_type="public_https"} offset 10m == 1)
+        for: 2m
+        labels:
+          severity: info
+          component: traffic-routing
+          state: switch_back
+        annotations:
+          summary: "Traffic Switched Back to Cloudflare Tunnel"
+          description: "Cloudflare Tunnel has recovered and is stable. Traffic routing should now prefer Cloudflare Tunnel over VPS failover. Both paths are healthy."
+
   prometheus.yml: |
     global:
       scrape_interval: 15s
       evaluation_interval: 15s
       external_labels:
         cluster: 'macmini-cluster'
+
+    alerting:
+      alertmanagers:
+      - static_configs:
+        - targets:
+          - 10.97.174.225:9093
+
+    rule_files:
+    - '/etc/prometheus/alert.rules.yml'
+    - '/etc/prometheus/failover.rules.yml'
 
     scrape_configs:
     # DNS metrics
@@ -396,6 +560,66 @@ data:
         target_label: __address__
       - action: labelmap
         regex: __meta_kubernetes_node_label_(.+)
+
+    # Cloudflared tunnel metrics
+    - job_name: 'cloudflared'
+      kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+          - ingress
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        action: keep
+        regex: cloudflared
+      - source_labels: [__address__]
+        action: replace
+        regex: ([^:]+)(?::\d+)?
+        replacement: $1:2000
+        target_label: __address__
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+      - target_label: component
+        replacement: cloudflare-tunnel
+
+    # Blackbox exporter probes for failover monitoring
+    - job_name: 'blackbox-public-https'
+      metrics_path: /probe
+      params:
+        module: [http_2xx]
+      static_configs:
+      - targets:
+        - https://mirai.sogos.io
+      relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter.monitoring.svc.cluster.local:9115
+      - target_label: probe_type
+        replacement: public_https
+      - target_label: component
+        replacement: cloudflare-edge
+
+    - job_name: 'blackbox-vps-wireguard'
+      metrics_path: /probe
+      params:
+        module: [http_2xx]
+      static_configs:
+      - targets:
+        - http://wireguard-failover.ingress.svc.cluster.local:80
+      relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter.monitoring.svc.cluster.local:9115
+      - target_label: probe_type
+        replacement: vps_wireguard
+      - target_label: component
+        replacement: vps-failover
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -435,11 +659,11 @@ spec:
           name: http
         resources:
           requests:
-            cpu: 100m
-            memory: 256Mi
-          limits:
             cpu: 500m
-            memory: 512Mi
+            memory: 2Gi
+          limits:
+            cpu: 2000m
+            memory: 8Gi
         volumeMounts:
         - name: config
           mountPath: /etc/prometheus
