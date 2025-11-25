@@ -12,7 +12,7 @@ spec:
   source:
     repoURL: https://github.com/sojohnnysaid/static-sites.git
     targetRevision: main
-    path: k8s
+    path: .
   destination:
     server: https://kubernetes.default.svc
     namespace: static-sites
