@@ -15,6 +15,8 @@ spec:
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 0
+  # Wait 30s before considering pod ready - reduces churn during rollouts
+  minReadySeconds: 30
   template:
     metadata:
       labels:
@@ -33,6 +35,9 @@ spec:
         labelSelector:
           matchLabels:
             app: cloudflared
+        # Isolate rolling update groups - prevents old pods from affecting new pod distribution
+        matchLabelKeys:
+          - pod-template-hash
       securityContext:
         seccompProfile:
           type: RuntimeDefault
@@ -88,15 +93,16 @@ spec:
           httpGet:
             path: /ready
             port: 2000
-          periodSeconds: 10
+          periodSeconds: 5
           timeoutSeconds: 5
-          failureThreshold: 3
-          successThreshold: 1
+          failureThreshold: 2
+          successThreshold: 2
         # Graceful shutdown - allow connections to drain
+        # 45s allows Cloudflare edge cache to expire before pod terminates
         lifecycle:
           preStop:
             exec:
-              command: ["/bin/sh", "-c", "sleep 15"]
+              command: ["/bin/sh", "-c", "sleep 45"]
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -112,7 +118,8 @@ spec:
         - name: TUNNEL_DNS_UPSTREAM
           value: "https://1.1.1.1/dns-query,https://8.8.8.8/dns-query"
       # Allow connections to drain during shutdown
-      terminationGracePeriodSeconds: 60
+      # Must be > preStop (45s) + grace-period (30s)
+      terminationGracePeriodSeconds: 90
       # Use NodeLocal DNSCache for faster DNS resolution
       dnsPolicy: None
       dnsConfig:

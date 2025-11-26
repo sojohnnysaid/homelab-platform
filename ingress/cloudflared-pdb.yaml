@@ -4,7 +4,9 @@ metadata:
   name: cloudflared-pdb
   namespace: ingress
 spec:
-  minAvailable: 4
+  # Allow max 1 pod unavailable - more flexible than minAvailable
+  # With 6 replicas, ensures at least 5 pods always available
+  maxUnavailable: 1
   selector:
     matchLabels:
       app: cloudflared

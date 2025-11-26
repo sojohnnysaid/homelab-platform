@@ -15,17 +15,19 @@ data:
     retries: 3
     # Connection settings for stability
     grace-period: 30s
-    # Global origin request settings for faster failover
+    # Global origin request settings for reliability
     originRequest:
-      connectTimeout: 1s
+      connectTimeout: 10s
       noHappyEyeballs: true
       tcpKeepAlive: 30s
+      keepAliveConnections: 100
+      keepAliveTimeout: 90s
     ingress:
       # Health endpoint for network round-trip testing
       - hostname: health.sogos.io
         service: http://health-endpoint.ingress.svc.cluster.local:80
         originRequest:
-          connectTimeout: 1s
+          connectTimeout: 2s
       # Mirai SaaS Application
       - hostname: mirai.sogos.io
         service: http://mirai-frontend.mirai.svc.cluster.local:80
