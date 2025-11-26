@@ -5,8 +5,9 @@ This directory contains Kubernetes manifests for edge ingress components.
 ## Components
 
 - **cloudflared**: Cloudflare Tunnel daemon for secure external access
-  - `cloudflared-deployment.yaml`: Deployment with 3 replicas, pod anti-affinity
+  - `cloudflared-deployment.yaml`: Deployment with 6 replicas, topology spread across nodes
   - `cloudflared-config.yaml`: ConfigMap with tunnel ingress rules
+  - `cloudflared-pdb.yaml`: PodDisruptionBudget for high availability
 - **dns-failover-controller**: Automatic DNS failover between Cloudflare Tunnel and VPS
 - **wireguard-deployment.yaml**: WireGuard VPN for failover connectivity
 
@@ -103,6 +104,69 @@ cloudflared tunnel route dns cb2a7768-4162-4da9-ac04-138fdecf3e3d newapp.sogos.i
 
 # Restart cloudflared
 kubectl rollout restart deployment cloudflared -n ingress
+```
+
+## Troubleshooting
+
+### Intermittent 502 Errors
+
+**Symptom**: Random 502 errors affecting 5-15% of requests
+
+**Common Causes**:
+
+1. **Local cloudflared running on your machine**
+
+   If you have cloudflared running locally (e.g., from previous testing), Cloudflare will load-balance traffic across ALL connectors - including your local machine which can't reach k8s services.
+
+   ```bash
+   # Check for local cloudflared
+   ps aux | grep cloudflared
+
+   # Check tunnel connectors (look for darwin/macOS entries)
+   cloudflared tunnel info cb2a7768-4162-4da9-ac04-138fdecf3e3d
+
+   # Kill local cloudflared if found
+   pkill cloudflared
+
+   # Remove launch agent to prevent restart
+   launchctl unload ~/Library/LaunchAgents/com.sogos.cloudflared.plist
+   rm ~/Library/LaunchAgents/com.sogos.cloudflared.plist
+
+   # Clean up stale connectors
+   cloudflared tunnel cleanup cb2a7768-4162-4da9-ac04-138fdecf3e3d
+   ```
+
+2. **Stale tunnel connectors**
+
+   ```bash
+   # List active connectors
+   cloudflared tunnel info <tunnel-id>
+
+   # Clean up disconnected connectors
+   cloudflared tunnel cleanup <tunnel-id>
+
+   # Restart k8s pods to reconnect
+   kubectl rollout restart deployment cloudflared -n ingress
+   ```
+
+3. **Backend pods not ready**
+
+   ```bash
+   # Check endpoint health
+   kubectl get endpoints <service-name> -n <namespace>
+
+   # Verify pods are ready
+   kubectl get pods -n <namespace> -l app=<app-name>
+   ```
+
+### Verifying Tunnel Health
+
+```bash
+# Check all connectors (should only show linux_amd64 from k8s)
+cloudflared tunnel info cb2a7768-4162-4da9-ac04-138fdecf3e3d
+
+# Test connectivity
+for i in $(seq 1 50); do curl -s -o /dev/null -w "%{http_code} " https://get-mirai.sogos.io; done
 ```
 
 ## Related Documentation
