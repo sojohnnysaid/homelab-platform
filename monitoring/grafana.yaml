@@ -99,6 +99,206 @@ data:
         "time": {"from": "now-1h", "to": "now"}
       }
     }
+  subdomain-availability-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "uid": "subdomain-availability",
+        "title": "Subdomain Availability",
+        "tags": ["availability", "cloudflare", "subdomains"],
+        "timezone": "browser",
+        "schemaVersion": 39,
+        "version": 1,
+        "refresh": "30s",
+        "time": {"from": "now-1h", "to": "now"},
+        "panels": [
+          {
+            "id": 1,
+            "title": "Current Status",
+            "type": "stat",
+            "gridPos": {"x": 0, "y": 0, "w": 24, "h": 4},
+            "datasource": {"type": "prometheus", "uid": "${datasource}"},
+            "fieldConfig": {
+              "defaults": {
+                "mappings": [
+                  {"type": "value", "options": {"0": {"text": "DOWN", "color": "red"}}},
+                  {"type": "value", "options": {"1": {"text": "UP", "color": "green"}}}
+                ],
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {"color": "red", "value": null},
+                    {"color": "green", "value": 1}
+                  ]
+                },
+                "unit": "none"
+              }
+            },
+            "options": {
+              "colorMode": "background",
+              "graphMode": "none",
+              "justifyMode": "center",
+              "textMode": "auto",
+              "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}
+            },
+            "targets": [
+              {
+                "expr": "probe_success{job=\"blackbox-subdomain-availability\"}",
+                "legendFormat": "{{subdomain}}",
+                "refId": "A"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "title": "Availability Over Time",
+            "type": "timeseries",
+            "gridPos": {"x": 0, "y": 4, "w": 24, "h": 8},
+            "datasource": {"type": "prometheus", "uid": "${datasource}"},
+            "fieldConfig": {
+              "defaults": {
+                "custom": {
+                  "drawStyle": "line",
+                  "lineWidth": 2,
+                  "fillOpacity": 20,
+                  "pointSize": 5,
+                  "showPoints": "auto"
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {"color": "red", "value": null},
+                    {"color": "green", "value": 1}
+                  ]
+                },
+                "min": 0,
+                "max": 1
+              }
+            },
+            "options": {"legend": {"displayMode": "table", "placement": "right"}},
+            "targets": [
+              {
+                "expr": "probe_success{job=\"blackbox-subdomain-availability\"}",
+                "legendFormat": "{{subdomain}}",
+                "refId": "A"
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "title": "Response Time (seconds)",
+            "type": "timeseries",
+            "gridPos": {"x": 0, "y": 12, "w": 24, "h": 8},
+            "datasource": {"type": "prometheus", "uid": "${datasource}"},
+            "fieldConfig": {
+              "defaults": {
+                "custom": {
+                  "drawStyle": "line",
+                  "lineWidth": 1,
+                  "fillOpacity": 10
+                },
+                "unit": "s",
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {"color": "green", "value": null},
+                    {"color": "yellow", "value": 1},
+                    {"color": "red", "value": 3}
+                  ]
+                }
+              }
+            },
+            "options": {"legend": {"displayMode": "table", "placement": "right"}},
+            "targets": [
+              {
+                "expr": "probe_duration_seconds{job=\"blackbox-subdomain-availability\"}",
+                "legendFormat": "{{subdomain}}",
+                "refId": "A"
+              }
+            ]
+          },
+          {
+            "id": 4,
+            "title": "Uptime % (24h)",
+            "type": "stat",
+            "gridPos": {"x": 0, "y": 20, "w": 24, "h": 4},
+            "datasource": {"type": "prometheus", "uid": "${datasource}"},
+            "fieldConfig": {
+              "defaults": {
+                "unit": "percentunit",
+                "decimals": 2,
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {"color": "red", "value": null},
+                    {"color": "yellow", "value": 0.95},
+                    {"color": "green", "value": 0.99}
+                  ]
+                }
+              }
+            },
+            "options": {
+              "colorMode": "value",
+              "graphMode": "area",
+              "justifyMode": "center",
+              "reduceOptions": {"calcs": ["mean"], "fields": "", "values": false}
+            },
+            "targets": [
+              {
+                "expr": "avg_over_time(probe_success{job=\"blackbox-subdomain-availability\"}[24h])",
+                "legendFormat": "{{subdomain}}",
+                "refId": "A"
+              }
+            ]
+          },
+          {
+            "id": 5,
+            "title": "SSL Certificate Expiry (days)",
+            "type": "stat",
+            "gridPos": {"x": 0, "y": 24, "w": 24, "h": 4},
+            "datasource": {"type": "prometheus", "uid": "${datasource}"},
+            "fieldConfig": {
+              "defaults": {
+                "unit": "d",
+                "decimals": 0,
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {"color": "red", "value": null},
+                    {"color": "yellow", "value": 14},
+                    {"color": "green", "value": 30}
+                  ]
+                }
+              }
+            },
+            "options": {
+              "colorMode": "value",
+              "graphMode": "none",
+              "justifyMode": "center",
+              "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}
+            },
+            "targets": [
+              {
+                "expr": "(probe_ssl_earliest_cert_expiry{job=\"blackbox-subdomain-availability\"} - time()) / 86400",
+                "legendFormat": "{{subdomain}}",
+                "refId": "A"
+              }
+            ]
+          }
+        ],
+        "templating": {
+          "list": [
+            {
+              "name": "datasource",
+              "type": "datasource",
+              "query": "prometheus",
+              "current": {"text": "Prometheus", "value": "Prometheus"},
+              "hide": 0
+            }
+          ]
+        }
+      }
+    }
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -620,6 +820,38 @@ data:
         replacement: vps_wireguard
       - target_label: component
         replacement: vps-failover
+
+    # Subdomain availability monitoring (separate from failover probes)
+    - job_name: 'blackbox-subdomain-availability'
+      metrics_path: /probe
+      params:
+        module: [http_2xx]
+      static_configs:
+      - targets:
+        - https://health.sogos.io
+        - https://mirai.sogos.io
+        - https://get-mirai.sogos.io
+        - https://mirai-api.sogos.io
+        - https://mirai-auth.sogos.io
+        - https://mailpit.sogos.io
+        - https://argocd.sogos.io
+        - https://grafana.sogos.io
+        - https://hello.sogos.io
+        - https://solutions.sogos.io
+        - https://product.sogos.io
+      relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - source_labels: [__param_target]
+        regex: 'https://([^.]+)\.sogos\.io'
+        replacement: '$1'
+        target_label: subdomain
+      - target_label: __address__
+        replacement: blackbox-exporter.monitoring.svc.cluster.local:9115
+      - target_label: probe_type
+        replacement: subdomain_availability
 ---
 apiVersion: apps/v1
 kind: Deployment
