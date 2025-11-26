@@ -7,6 +7,8 @@ data:
   config.yml: |
     tunnel: cb2a7768-4162-4da9-ac04-138fdecf3e3d
     credentials-file: /etc/cloudflared/credentials.json
+    # Force HTTP/2 instead of QUIC for stability (QUIC uses UDP which may be throttled)
+    protocol: http2
     # Retry failed requests for resilience
     retries: 3
     # Connection settings for stability
