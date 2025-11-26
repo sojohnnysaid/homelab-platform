@@ -13,46 +13,28 @@ data:
       smtp_require_tls: true
       smtp_hello: 'mirai.sogos.io'
 
+    # ALL EMAILS DISABLED - Only daily digest CronJob sends email
+    # Webhooks for DNS failover automation still work (no email)
     route:
       group_by: ['alertname', 'cluster', 'service']
-      group_wait: 10s
-      group_interval: 10s
+      group_wait: 30s
+      group_interval: 5m
       repeat_interval: 24h
-      receiver: 'null'  # ALL alerts silenced - daily digest CronJob sends one email per day
+      receiver: 'null'
       routes:
-      # Webhook automations still work (no email, just triggers DNS failover controller)
+      # DNS failover automation (webhook only, no email)
       - matchers:
-        - severity = "critical"
-        - alertname =~ "CloudflareTunnelDown|DualFailure"
+        - alertname =~ "CloudflareTunnelDown|DualFailure|CloudflareTunnelRecovered"
         receiver: 'dns-failover-webhook'
         group_wait: 10s
         repeat_interval: 30s
-      - matchers:
-        - severity = "info"
-        - alertname = "CloudflareTunnelRecovered"
-        receiver: 'dns-failover-webhook'
-        group_wait: 10s
-        repeat_interval: 30s
-
-    templates:
-    - '/etc/alertmanager/templates/*.tmpl'
 
     receivers:
     - name: 'null'
-
-    - name: 'email-alerts'
-      email_configs:
-      - to: 'sojohnnysaid+cluster-alerts@gmail.com'
-        html: '{{ template "email.html" . }}'
-        headers:
-          Subject: '{{ if eq .Status "firing" }}{{ if eq .CommonLabels.severity "critical" }}🔥{{ else if eq .CommonLabels.severity "warning" }}⚠️{{ else if eq .CommonLabels.state "healthy" }}☀️{{ else }}🟢{{ end }}{{ else }}🟢{{ end }} {{ .GroupLabels.alertname }} - {{ .CommonLabels.cluster }}'
-
     - name: 'dns-failover-webhook'
       webhook_configs:
       - url: 'http://dns-failover-controller.ingress.svc.cluster.local/webhook'
         send_resolved: true
-        http_config:
-          follow_redirects: true
 
   email.tmpl: |
     {{ define "email.html" }}

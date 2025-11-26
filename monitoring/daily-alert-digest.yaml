@@ -78,8 +78,8 @@ data:
     - Warning: $WARNING_COUNT
     - Info: $INFO_COUNT
 
-    Note: Only CRITICAL alerts trigger immediate email.
-    All other alerts are included in this daily digest.
+    Note: ALL immediate emails are disabled.
+    This daily digest is your ONLY alert email.
 
     See attached CSV for full details.
     ========================================
