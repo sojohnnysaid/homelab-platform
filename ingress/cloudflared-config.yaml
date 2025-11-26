@@ -7,29 +7,57 @@ data:
   config.yml: |
     tunnel: cb2a7768-4162-4da9-ac04-138fdecf3e3d
     credentials-file: /etc/cloudflared/credentials.json
+    # Retry failed requests for resilience
+    retries: 3
+    # Connection settings for stability
+    grace-period: 30s
     ingress:
       # Mirai SaaS Application
       - hostname: mirai.sogos.io
         service: http://mirai-frontend.mirai.svc.cluster.local:80
+        originRequest:
+          connectTimeout: 10s
+          noHappyEyeballs: true
       - hostname: get-mirai.sogos.io
         service: http://mirai-marketing.mirai.svc.cluster.local:80
+        originRequest:
+          connectTimeout: 10s
+          noHappyEyeballs: true
       - hostname: mirai-api.sogos.io
         service: http://mirai-backend.mirai.svc.cluster.local:8080
+        originRequest:
+          connectTimeout: 10s
+          noHappyEyeballs: true
       # Ory Kratos Authentication
       - hostname: mirai-auth.sogos.io
         service: http://kratos-public.kratos.svc.cluster.local:80
+        originRequest:
+          connectTimeout: 10s
+          noHappyEyeballs: true
       # Mailpit Email Testing (dev only)
       - hostname: mailpit.sogos.io
         service: http://mailpit.default.svc.cluster.local:8025
+        originRequest:
+          connectTimeout: 10s
       # Other services
       - hostname: argocd.sogos.io
         service: http://argocd-server.argocd.svc.cluster.local:80
+        originRequest:
+          connectTimeout: 10s
       - hostname: grafana.sogos.io
         service: http://grafana.monitoring.svc.cluster.local:3000
+        originRequest:
+          connectTimeout: 10s
       - hostname: hello.sogos.io
         service: http://hello-world.static-sites.svc.cluster.local:80
+        originRequest:
+          connectTimeout: 10s
       - hostname: solutions.sogos.io
         service: http://solutions.static-sites.svc.cluster.local:80
+        originRequest:
+          connectTimeout: 10s
       - hostname: product.sogos.io
         service: http://product.static-sites.svc.cluster.local:80
+        originRequest:
+          connectTimeout: 10s
       - service: http_status:404
