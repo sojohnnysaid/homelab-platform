@@ -73,15 +73,22 @@ spec:
           periodSeconds: 15
           timeoutSeconds: 10
           failureThreshold: 5
+        # Startup probe - gives pod time to initialize before liveness kicks in
+        startupProbe:
+          httpGet:
+            path: /ready
+            port: 2000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          failureThreshold: 12
         readinessProbe:
           httpGet:
             path: /ready
             port: 2000
-          initialDelaySeconds: 10
-          periodSeconds: 5
+          periodSeconds: 10
           timeoutSeconds: 5
-          failureThreshold: 2
-          successThreshold: 2
+          failureThreshold: 3
+          successThreshold: 1
         # Graceful shutdown - allow connections to drain
         lifecycle:
           preStop:
@@ -103,8 +110,17 @@ spec:
           value: "https://1.1.1.1/dns-query,https://8.8.8.8/dns-query"
       # Allow connections to drain during shutdown
       terminationGracePeriodSeconds: 60
-      # DNS configuration to use host DNS if available
-      dnsPolicy: ClusterFirstWithHostNet
+      # Use default cluster DNS
+      dnsPolicy: ClusterFirst
+      # Custom DNS config for reliability
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "2"
+          - name: timeout
+            value: "2"
+          - name: attempts
+            value: "3"
       volumes:
       - name: cloudflared
         projected:
