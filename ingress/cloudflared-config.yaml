@@ -43,20 +43,26 @@ data:
         service: http://mirai-marketing.mirai.svc.cluster.local:80
         originRequest:
           connectTimeout: 10s
+          tlsTimeout: 10s
           noHappyEyeballs: true
+          keepAliveConnections: 50
           keepAliveTimeout: 25s
       - hostname: mirai-api.sogos.io
         service: http://mirai-backend.mirai.svc.cluster.local:8080
         originRequest:
           connectTimeout: 10s
+          tlsTimeout: 10s
           noHappyEyeballs: true
+          keepAliveConnections: 50
           keepAliveTimeout: 25s
       # Ory Kratos Authentication
       - hostname: mirai-auth.sogos.io
         service: http://kratos-public.kratos.svc.cluster.local:80
         originRequest:
           connectTimeout: 10s
+          tlsTimeout: 10s
           noHappyEyeballs: true
+          keepAliveConnections: 50
           keepAliveTimeout: 25s
       # Mailpit Email Testing (dev only)
       - hostname: mailpit.sogos.io
