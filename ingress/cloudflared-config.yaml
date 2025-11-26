@@ -16,12 +16,14 @@ data:
     # Connection settings for stability
     grace-period: 30s
     # Global origin request settings for reliability
+    # CRITICAL: keepAliveTimeout must be < kube-proxy's 30s idle timeout to avoid stale connections
     originRequest:
       connectTimeout: 10s
+      tlsTimeout: 10s
       noHappyEyeballs: true
-      tcpKeepAlive: 30s
-      keepAliveConnections: 100
-      keepAliveTimeout: 90s
+      tcpKeepAlive: 15s
+      keepAliveConnections: 50
+      keepAliveTimeout: 25s
     ingress:
       # Health endpoint for network round-trip testing
       - hostname: health.sogos.io
@@ -33,50 +35,59 @@ data:
         service: http://mirai-frontend.mirai.svc.cluster.local:80
         originRequest:
           connectTimeout: 10s
+          tlsTimeout: 10s
           noHappyEyeballs: true
-          keepAliveConnections: 100
-          keepAliveTimeout: 90s
-          http2Origin: true
+          keepAliveConnections: 50
+          keepAliveTimeout: 25s
       - hostname: get-mirai.sogos.io
         service: http://mirai-marketing.mirai.svc.cluster.local:80
         originRequest:
           connectTimeout: 10s
           noHappyEyeballs: true
+          keepAliveTimeout: 25s
       - hostname: mirai-api.sogos.io
         service: http://mirai-backend.mirai.svc.cluster.local:8080
         originRequest:
           connectTimeout: 10s
           noHappyEyeballs: true
+          keepAliveTimeout: 25s
       # Ory Kratos Authentication
       - hostname: mirai-auth.sogos.io
         service: http://kratos-public.kratos.svc.cluster.local:80
         originRequest:
           connectTimeout: 10s
           noHappyEyeballs: true
+          keepAliveTimeout: 25s
       # Mailpit Email Testing (dev only)
       - hostname: mailpit.sogos.io
         service: http://mailpit.default.svc.cluster.local:8025
         originRequest:
           connectTimeout: 10s
+          keepAliveTimeout: 25s
       # Other services
       - hostname: argocd.sogos.io
         service: http://argocd-server.argocd.svc.cluster.local:80
         originRequest:
           connectTimeout: 10s
+          keepAliveTimeout: 25s
       - hostname: grafana.sogos.io
         service: http://grafana.monitoring.svc.cluster.local:3000
         originRequest:
           connectTimeout: 10s
+          keepAliveTimeout: 25s
       - hostname: hello.sogos.io
         service: http://hello-world.static-sites.svc.cluster.local:80
         originRequest:
           connectTimeout: 10s
+          keepAliveTimeout: 25s
       - hostname: solutions.sogos.io
         service: http://solutions.static-sites.svc.cluster.local:80
         originRequest:
           connectTimeout: 10s
+          keepAliveTimeout: 25s
       - hostname: product.sogos.io
         service: http://product.static-sites.svc.cluster.local:80
         originRequest:
           connectTimeout: 10s
+          keepAliveTimeout: 25s
       - service: http_status:404

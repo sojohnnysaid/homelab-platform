@@ -18,58 +18,21 @@ data:
       group_wait: 10s
       group_interval: 10s
       repeat_interval: 24h
-      receiver: 'email-alerts'
+      receiver: 'null'  # ALL alerts silenced - daily digest CronJob sends one email per day
       routes:
-      # Suppress test alerts completely
-      - matchers:
-        - alertname =~ ".*SmokeTest.*|.*Test.*"
-        receiver: 'null'
-
-      # CRITICAL: Immediate notification, repeat every 4 hours until resolved
-      # Also send to webhook for DNS failover automation
-      - matchers:
-        - severity = "critical"
-        receiver: 'email-alerts'
-        group_wait: 30s
-        repeat_interval: 4h
-        continue: true  # Also route to webhook
+      # Webhook automations still work (no email, just triggers DNS failover controller)
       - matchers:
         - severity = "critical"
         - alertname =~ "CloudflareTunnelDown|DualFailure"
         receiver: 'dns-failover-webhook'
         group_wait: 10s
-        repeat_interval: 30s  # Check every 30s for faster stabilization
-
-      # WARNING: Immediate notification, repeat every 8 hours
-      - matchers:
-        - severity = "warning"
-        receiver: 'email-alerts'
-        group_wait: 1m
-        repeat_interval: 8h
-
-      # INFO - Recovery: Immediate notification, then daily
-      # Also send recovery alerts to webhook for automatic failback
-      - matchers:
-        - severity = "info"
-        - state =~ "recovered|switch_back"
-        receiver: 'email-alerts'
-        group_wait: 1m
-        repeat_interval: 24h
-        continue: true  # Also route to webhook
+        repeat_interval: 30s
       - matchers:
         - severity = "info"
         - alertname = "CloudflareTunnelRecovered"
         receiver: 'dns-failover-webhook'
         group_wait: 10s
-        repeat_interval: 30s  # Check every 30s for faster failback
-
-      # INFO - Healthy: Daily confirmation that systems are operational
-      - matchers:
-        - severity = "info"
-        - state =~ "healthy|reachable"
-        receiver: 'email-alerts'
-        group_wait: 30s
-        repeat_interval: 24h
+        repeat_interval: 30s
 
     templates:
     - '/etc/alertmanager/templates/*.tmpl'

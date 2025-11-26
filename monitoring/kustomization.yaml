@@ -13,6 +13,7 @@ resources:
   - kube-state-metrics.yaml
   - blackbox-exporter.yaml
   - persistent-volumes.yaml
+  - daily-alert-digest.yaml
   # Removed duplicate ConfigMaps:
   # - prometheus-config.yaml (in grafana.yaml)
   # - dashboards-configmap.yaml (in grafana.yaml)

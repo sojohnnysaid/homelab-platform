@@ -1,0 +1,181 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alert-digest-script
+  namespace: monitoring
+data:
+  generate-digest.sh: |
+    #!/bin/sh
+    set -e
+
+    # Configuration
+    PROMETHEUS_URL="http://prometheus.monitoring.svc.cluster.local:9090"
+    ALERTMANAGER_URL="http://alertmanager.monitoring.svc.cluster.local:9093"
+    EMAIL_TO="${EMAIL_TO:-sojohnnysaid+cluster-alerts@gmail.com}"
+    EMAIL_FROM="${EMAIL_FROM:-cluster-alerts@mirai.sogos.io}"
+    CLUSTER_NAME="macmini-cluster"
+
+    # Create working directory
+    WORKDIR="/tmp/alert-digest"
+    mkdir -p "$WORKDIR"
+    cd "$WORKDIR"
+
+    # Get current date for report
+    REPORT_DATE=$(date -u +"%Y-%m-%d")
+    REPORT_TIME=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+
+    echo "Generating alert digest for $REPORT_DATE..."
+
+    # Query Prometheus for alerts that fired in the last 24 hours
+    # Using ALERTS_FOR_STATE metric which tracks alert state history
+    echo "alertname,severity,state,namespace,service,instance,starts_at,description" > alerts.csv
+
+    # Query current alerts from Alertmanager
+    curl -s "$ALERTMANAGER_URL/api/v2/alerts" | \
+      jq -r '.[] | [
+        .labels.alertname // "N/A",
+        .labels.severity // "N/A",
+        .status.state // "N/A",
+        .labels.namespace // "N/A",
+        .labels.service // "N/A",
+        .labels.instance // "N/A",
+        .startsAt // "N/A",
+        (.annotations.description // .annotations.summary // "N/A") | gsub(","; ";") | gsub("\n"; " ")
+      ] | @csv' >> alerts.csv 2>/dev/null || echo "No active alerts"
+
+    # Query Prometheus for historical alert data (ALERTS metric)
+    # Get alerts that were firing at any point in the last 24h
+    curl -s "$PROMETHEUS_URL/api/v1/query?query=count(ALERTS{alertstate=\"firing\"})%20by%20(alertname,severity,namespace,instance)" | \
+      jq -r '.data.result[] | [
+        .metric.alertname // "N/A",
+        .metric.severity // "N/A",
+        "firing",
+        .metric.namespace // "N/A",
+        "N/A",
+        .metric.instance // "N/A",
+        "last_24h",
+        "Historical count: " + (.value[1] // "0")
+      ] | @csv' >> alerts.csv 2>/dev/null || echo "No historical alerts"
+
+    # Count alerts by severity
+    CRITICAL_COUNT=$(grep -c '"critical"' alerts.csv 2>/dev/null || echo "0")
+    WARNING_COUNT=$(grep -c '"warning"' alerts.csv 2>/dev/null || echo "0")
+    INFO_COUNT=$(grep -c '"info"' alerts.csv 2>/dev/null || echo "0")
+    TOTAL_LINES=$(wc -l < alerts.csv)
+    TOTAL_ALERTS=$((TOTAL_LINES - 1))  # Subtract header
+
+    # Generate summary
+    cat > summary.txt << EOF
+    ========================================
+    DAILY ALERT DIGEST - $CLUSTER_NAME
+    ========================================
+    Report Generated: $REPORT_TIME
+
+    SUMMARY
+    -------
+    Total Alerts: $TOTAL_ALERTS
+    - Critical: $CRITICAL_COUNT
+    - Warning: $WARNING_COUNT
+    - Info: $INFO_COUNT
+
+    Note: Only CRITICAL alerts trigger immediate email.
+    All other alerts are included in this daily digest.
+
+    See attached CSV for full details.
+    ========================================
+    EOF
+
+    # Send email with attachment using msmtp/sendmail
+    # Build MIME multipart message
+    BOUNDARY="----=_Part_$(date +%s)"
+
+    cat > email.txt << EMAILEOF
+    From: $EMAIL_FROM
+    To: $EMAIL_TO
+    Subject: Daily Alert Digest - $CLUSTER_NAME - $REPORT_DATE
+    MIME-Version: 1.0
+    Content-Type: multipart/mixed; boundary="$BOUNDARY"
+
+    --$BOUNDARY
+    Content-Type: text/plain; charset=utf-8
+
+    $(cat summary.txt)
+
+    --$BOUNDARY
+    Content-Type: text/csv; name="alerts-$REPORT_DATE.csv"
+    Content-Disposition: attachment; filename="alerts-$REPORT_DATE.csv"
+    Content-Transfer-Encoding: base64
+
+    $(base64 alerts.csv)
+
+    --$BOUNDARY--
+    EMAILEOF
+
+    # Send via curl to SMTP (using Mailpit if available, otherwise external SMTP)
+    if curl -s "http://mailpit.default.svc.cluster.local:8025" > /dev/null 2>&1; then
+      # Use Mailpit for testing
+      curl -s --url "smtp://mailpit.default.svc.cluster.local:1025" \
+        --mail-from "$EMAIL_FROM" \
+        --mail-rcpt "$EMAIL_TO" \
+        --upload-file email.txt
+      echo "Email sent via Mailpit"
+    else
+      # Use external SMTP (requires credentials)
+      curl -s --url "smtps://smtp.gmail.com:465" \
+        --ssl-reqd \
+        --mail-from "$EMAIL_FROM" \
+        --mail-rcpt "$EMAIL_TO" \
+        --user "${SMTP_USER}:${SMTP_PASSWORD}" \
+        --upload-file email.txt
+      echo "Email sent via Gmail SMTP"
+    fi
+
+    echo "Daily digest complete!"
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: daily-alert-digest
+  namespace: monitoring
+spec:
+  # Run daily at 7:00 AM UTC (adjust timezone as needed)
+  schedule: "0 7 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: digest
+            image: alpine:3.19
+            command: ["/bin/sh", "/scripts/generate-digest.sh"]
+            env:
+            - name: EMAIL_TO
+              value: "sojohnnysaid+cluster-alerts@gmail.com"
+            - name: EMAIL_FROM
+              value: "cluster-alerts@mirai.sogos.io"
+            - name: SMTP_USER
+              value: "sojohnnysaid@gmail.com"
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: alertmanager-smtp
+                  key: smtp-password
+            volumeMounts:
+            - name: script
+              mountPath: /scripts
+            resources:
+              requests:
+                cpu: 50m
+                memory: 64Mi
+              limits:
+                cpu: 200m
+                memory: 128Mi
+          volumes:
+          - name: script
+            configMap:
+              name: alert-digest-script
+              defaultMode: 0755
+          restartPolicy: OnFailure
