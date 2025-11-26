@@ -4,7 +4,7 @@ metadata:
   name: cloudflared-pdb
   namespace: ingress
 spec:
-  minAvailable: 2
+  minAvailable: 4
   selector:
     matchLabels:
       app: cloudflared
