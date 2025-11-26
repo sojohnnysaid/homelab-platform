@@ -47,257 +47,244 @@ metadata:
 data:
   dns-cache-dashboard.json: |
     {
-      "dashboard": {
-        "title": "DNS Cache & Resolution Monitor",
-        "panels": [
-          {
-            "title": "DNS Query Rate",
-            "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
-            "datasource": "Prometheus",
-            "targets": [
-              {
-                "expr": "rate(coredns_dns_requests_total[5m])"
-              }
-            ],
-            "type": "graph"
-          },
-          {
-            "title": "DNS Cache Hit Ratio",
-            "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
-            "datasource": "Prometheus",
-            "targets": [
-              {
-                "expr": "coredns_cache_hits_total / (coredns_cache_hits_total + coredns_cache_misses_total)"
-              }
-            ],
-            "type": "stat"
-          },
-          {
-            "title": "DNS Errors (Last Hour)",
-            "gridPos": {"x": 0, "y": 8, "w": 24, "h": 8},
-            "datasource": "Loki",
-            "targets": [
-              {
-                "expr": "{namespace=\"kube-system\", app=\"node-local-dns\"} |~ \"error|timeout|fail\""
-              }
-            ],
-            "type": "logs"
-          },
-          {
-            "title": "CloudFlare Tunnel Status",
-            "gridPos": {"x": 0, "y": 16, "w": 24, "h": 8},
-            "datasource": "Loki",
-            "targets": [
-              {
-                "expr": "{app=\"cloudflared\"} |~ \"error|fail|disconnect|timeout\""
-              }
-            ],
-            "type": "logs"
-          }
-        ],
-        "refresh": "10s",
-        "time": {"from": "now-1h", "to": "now"}
-      }
+      "title": "DNS Cache & Resolution Monitor",
+      "uid": "dns-cache",
+      "panels": [
+        {
+          "title": "DNS Query Rate",
+          "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "rate(coredns_dns_requests_total[5m])"
+            }
+          ],
+          "type": "graph"
+        },
+        {
+          "title": "DNS Cache Hit Ratio",
+          "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "coredns_cache_hits_total / (coredns_cache_hits_total + coredns_cache_misses_total)"
+            }
+          ],
+          "type": "stat"
+        },
+        {
+          "title": "DNS Errors (Last Hour)",
+          "gridPos": {"x": 0, "y": 8, "w": 24, "h": 8},
+          "datasource": "Loki",
+          "targets": [
+            {
+              "expr": "{namespace=\"kube-system\", app=\"node-local-dns\"} |~ \"error|timeout|fail\""
+            }
+          ],
+          "type": "logs"
+        },
+        {
+          "title": "CloudFlare Tunnel Status",
+          "gridPos": {"x": 0, "y": 16, "w": 24, "h": 8},
+          "datasource": "Loki",
+          "targets": [
+            {
+              "expr": "{app=\"cloudflared\"} |~ \"error|fail|disconnect|timeout\""
+            }
+          ],
+          "type": "logs"
+        }
+      ],
+      "refresh": "10s",
+      "time": {"from": "now-1h", "to": "now"},
+      "schemaVersion": 39
     }
   subdomain-availability-dashboard.json: |
     {
-      "dashboard": {
-        "id": null,
-        "uid": "subdomain-availability",
-        "title": "Subdomain Availability",
-        "tags": ["availability", "cloudflare", "subdomains"],
-        "timezone": "browser",
-        "schemaVersion": 39,
-        "version": 1,
-        "refresh": "30s",
-        "time": {"from": "now-1h", "to": "now"},
-        "panels": [
-          {
-            "id": 1,
-            "title": "Current Status",
-            "type": "stat",
-            "gridPos": {"x": 0, "y": 0, "w": 24, "h": 4},
-            "datasource": {"type": "prometheus", "uid": "${datasource}"},
-            "fieldConfig": {
-              "defaults": {
-                "mappings": [
-                  {"type": "value", "options": {"0": {"text": "DOWN", "color": "red"}}},
-                  {"type": "value", "options": {"1": {"text": "UP", "color": "green"}}}
-                ],
-                "thresholds": {
-                  "mode": "absolute",
-                  "steps": [
-                    {"color": "red", "value": null},
-                    {"color": "green", "value": 1}
-                  ]
-                },
-                "unit": "none"
-              }
-            },
-            "options": {
-              "colorMode": "background",
-              "graphMode": "none",
-              "justifyMode": "center",
-              "textMode": "auto",
-              "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}
-            },
-            "targets": [
-              {
-                "expr": "probe_success{job=\"blackbox-subdomain-availability\"}",
-                "legendFormat": "{{subdomain}}",
-                "refId": "A"
-              }
-            ]
+      "id": null,
+      "uid": "subdomain-availability",
+      "title": "Subdomain Availability",
+      "tags": ["availability", "cloudflare", "subdomains"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "30s",
+      "time": {"from": "now-1h", "to": "now"},
+      "panels": [
+        {
+          "id": 1,
+          "title": "Current Status",
+          "type": "stat",
+          "gridPos": {"x": 0, "y": 0, "w": 24, "h": 4},
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [
+                {"type": "value", "options": {"0": {"text": "DOWN", "color": "red"}}},
+                {"type": "value", "options": {"1": {"text": "UP", "color": "green"}}}
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "red", "value": null},
+                  {"color": "green", "value": 1}
+                ]
+              },
+              "unit": "none"
+            }
           },
-          {
-            "id": 2,
-            "title": "Availability Over Time",
-            "type": "timeseries",
-            "gridPos": {"x": 0, "y": 4, "w": 24, "h": 8},
-            "datasource": {"type": "prometheus", "uid": "${datasource}"},
-            "fieldConfig": {
-              "defaults": {
-                "custom": {
-                  "drawStyle": "line",
-                  "lineWidth": 2,
-                  "fillOpacity": 20,
-                  "pointSize": 5,
-                  "showPoints": "auto"
-                },
-                "thresholds": {
-                  "mode": "absolute",
-                  "steps": [
-                    {"color": "red", "value": null},
-                    {"color": "green", "value": 1}
-                  ]
-                },
-                "min": 0,
-                "max": 1
-              }
-            },
-            "options": {"legend": {"displayMode": "table", "placement": "right"}},
-            "targets": [
-              {
-                "expr": "probe_success{job=\"blackbox-subdomain-availability\"}",
-                "legendFormat": "{{subdomain}}",
-                "refId": "A"
-              }
-            ]
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "textMode": "auto",
+            "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}
           },
-          {
-            "id": 3,
-            "title": "Response Time (seconds)",
-            "type": "timeseries",
-            "gridPos": {"x": 0, "y": 12, "w": 24, "h": 8},
-            "datasource": {"type": "prometheus", "uid": "${datasource}"},
-            "fieldConfig": {
-              "defaults": {
-                "custom": {
-                  "drawStyle": "line",
-                  "lineWidth": 1,
-                  "fillOpacity": 10
-                },
-                "unit": "s",
-                "thresholds": {
-                  "mode": "absolute",
-                  "steps": [
-                    {"color": "green", "value": null},
-                    {"color": "yellow", "value": 1},
-                    {"color": "red", "value": 3}
-                  ]
-                }
-              }
-            },
-            "options": {"legend": {"displayMode": "table", "placement": "right"}},
-            "targets": [
-              {
-                "expr": "probe_duration_seconds{job=\"blackbox-subdomain-availability\"}",
-                "legendFormat": "{{subdomain}}",
-                "refId": "A"
-              }
-            ]
-          },
-          {
-            "id": 4,
-            "title": "Uptime % (24h)",
-            "type": "stat",
-            "gridPos": {"x": 0, "y": 20, "w": 24, "h": 4},
-            "datasource": {"type": "prometheus", "uid": "${datasource}"},
-            "fieldConfig": {
-              "defaults": {
-                "unit": "percentunit",
-                "decimals": 2,
-                "thresholds": {
-                  "mode": "absolute",
-                  "steps": [
-                    {"color": "red", "value": null},
-                    {"color": "yellow", "value": 0.95},
-                    {"color": "green", "value": 0.99}
-                  ]
-                }
-              }
-            },
-            "options": {
-              "colorMode": "value",
-              "graphMode": "area",
-              "justifyMode": "center",
-              "reduceOptions": {"calcs": ["mean"], "fields": "", "values": false}
-            },
-            "targets": [
-              {
-                "expr": "avg_over_time(probe_success{job=\"blackbox-subdomain-availability\"}[24h])",
-                "legendFormat": "{{subdomain}}",
-                "refId": "A"
-              }
-            ]
-          },
-          {
-            "id": 5,
-            "title": "SSL Certificate Expiry (days)",
-            "type": "stat",
-            "gridPos": {"x": 0, "y": 24, "w": 24, "h": 4},
-            "datasource": {"type": "prometheus", "uid": "${datasource}"},
-            "fieldConfig": {
-              "defaults": {
-                "unit": "d",
-                "decimals": 0,
-                "thresholds": {
-                  "mode": "absolute",
-                  "steps": [
-                    {"color": "red", "value": null},
-                    {"color": "yellow", "value": 14},
-                    {"color": "green", "value": 30}
-                  ]
-                }
-              }
-            },
-            "options": {
-              "colorMode": "value",
-              "graphMode": "none",
-              "justifyMode": "center",
-              "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}
-            },
-            "targets": [
-              {
-                "expr": "(probe_ssl_earliest_cert_expiry{job=\"blackbox-subdomain-availability\"} - time()) / 86400",
-                "legendFormat": "{{subdomain}}",
-                "refId": "A"
-              }
-            ]
-          }
-        ],
-        "templating": {
-          "list": [
+          "targets": [
             {
-              "name": "datasource",
-              "type": "datasource",
-              "query": "prometheus",
-              "current": {"text": "Prometheus", "value": "Prometheus"},
-              "hide": 0
+              "expr": "probe_success{job=\"blackbox-subdomain-availability\"}",
+              "legendFormat": "{{subdomain}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "title": "Availability Over Time",
+          "type": "timeseries",
+          "gridPos": {"x": 0, "y": 4, "w": 24, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 20,
+                "pointSize": 5,
+                "showPoints": "auto"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "red", "value": null},
+                  {"color": "green", "value": 1}
+                ]
+              },
+              "min": 0,
+              "max": 1
+            }
+          },
+          "options": {"legend": {"displayMode": "table", "placement": "right"}},
+          "targets": [
+            {
+              "expr": "probe_success{job=\"blackbox-subdomain-availability\"}",
+              "legendFormat": "{{subdomain}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "title": "Response Time (seconds)",
+          "type": "timeseries",
+          "gridPos": {"x": 0, "y": 12, "w": 24, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 10
+              },
+              "unit": "s",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "green", "value": null},
+                  {"color": "yellow", "value": 1},
+                  {"color": "red", "value": 3}
+                ]
+              }
+            }
+          },
+          "options": {"legend": {"displayMode": "table", "placement": "right"}},
+          "targets": [
+            {
+              "expr": "probe_duration_seconds{job=\"blackbox-subdomain-availability\"}",
+              "legendFormat": "{{subdomain}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "title": "Uptime % (24h)",
+          "type": "stat",
+          "gridPos": {"x": 0, "y": 20, "w": 24, "h": 4},
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "decimals": 2,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "red", "value": null},
+                  {"color": "yellow", "value": 0.95},
+                  {"color": "green", "value": 0.99}
+                ]
+              }
+            }
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "center",
+            "reduceOptions": {"calcs": ["mean"], "fields": "", "values": false}
+          },
+          "targets": [
+            {
+              "expr": "avg_over_time(probe_success{job=\"blackbox-subdomain-availability\"}[24h])",
+              "legendFormat": "{{subdomain}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "title": "SSL Certificate Expiry (days)",
+          "type": "stat",
+          "gridPos": {"x": 0, "y": 24, "w": 24, "h": 4},
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "d",
+              "decimals": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "red", "value": null},
+                  {"color": "yellow", "value": 14},
+                  {"color": "green", "value": 30}
+                ]
+              }
+            }
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}
+          },
+          "targets": [
+            {
+              "expr": "(probe_ssl_earliest_cert_expiry{job=\"blackbox-subdomain-availability\"} - time()) / 86400",
+              "legendFormat": "{{subdomain}}",
+              "refId": "A"
             }
           ]
         }
-      }
+      ]
     }
 ---
 apiVersion: apps/v1
@@ -350,11 +337,11 @@ spec:
           value: "true"
         resources:
           requests:
-            cpu: 100m
-            memory: 128Mi
+            cpu: 200m
+            memory: 512Mi
           limits:
-            cpu: 500m
-            memory: 256Mi
+            cpu: 1000m
+            memory: 1Gi
         volumeMounts:
         - name: datasources
           mountPath: /etc/grafana/provisioning/datasources
