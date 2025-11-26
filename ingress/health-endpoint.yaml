@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: health-endpoint
+  namespace: ingress
+  labels:
+    app: health-endpoint
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: health-endpoint
+  template:
+    metadata:
+      labels:
+        app: health-endpoint
+    spec:
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app: health-endpoint
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "16Mi"
+            cpu: "5m"
+          limits:
+            memory: "32Mi"
+            cpu: "25m"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          periodSeconds: 10
+        volumeMounts:
+        - name: html
+          mountPath: /usr/share/nginx/html
+      volumes:
+      - name: html
+        configMap:
+          name: health-endpoint-html
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: health-endpoint-html
+  namespace: ingress
+data:
+  index.html: |
+    OK
+  health: |
+    OK
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: health-endpoint
+  namespace: ingress
+spec:
+  selector:
+    app: health-endpoint
+  ports:
+  - port: 80
+    targetPort: 80

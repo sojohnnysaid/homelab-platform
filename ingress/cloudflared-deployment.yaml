@@ -25,19 +25,14 @@ spec:
       - key: node-role.kubernetes.io/control-plane
         operator: Exists
         effect: NoSchedule
-      # Ensure pods are spread across different nodes
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - cloudflared
-              topologyKey: kubernetes.io/hostname
+      # Guarantee pods are evenly spread across nodes (2 per node with 6 pods/3 nodes)
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app: cloudflared
       securityContext:
         seccompProfile:
           type: RuntimeDefault
@@ -55,6 +50,10 @@ spec:
         - "5"
         - --metrics
         - 0.0.0.0:2000
+        - --loglevel
+        - info
+        - --transport-loglevel
+        - warn
         - run
         - home-server
         ports:
@@ -114,10 +113,16 @@ spec:
           value: "https://1.1.1.1/dns-query,https://8.8.8.8/dns-query"
       # Allow connections to drain during shutdown
       terminationGracePeriodSeconds: 60
-      # Use default cluster DNS
-      dnsPolicy: ClusterFirst
-      # Custom DNS config for reliability
+      # Use NodeLocal DNSCache for faster DNS resolution
+      dnsPolicy: None
       dnsConfig:
+        nameservers:
+          - 169.254.20.10  # NodeLocal DNSCache
+          - 10.96.0.10     # CoreDNS fallback
+        searches:
+          - ingress.svc.cluster.local
+          - svc.cluster.local
+          - cluster.local
         options:
           - name: ndots
             value: "2"
