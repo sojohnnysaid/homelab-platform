@@ -96,4 +96,10 @@ data:
         originRequest:
           connectTimeout: 10s
           keepAliveTimeout: 25s
+      # Homepage (root domain)
+      - hostname: sogos.io
+        service: http://homepage.static-sites.svc.cluster.local:80
+        originRequest:
+          connectTimeout: 10s
+          keepAliveTimeout: 25s
       - service: http_status:404
