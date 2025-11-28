@@ -8,6 +8,7 @@ spec:
   sourceRepos:
     - 'https://github.com/sojohnnysaid/mirai-app.git'
     - 'https://github.com/sojohnnysaid/static-sites.git'
+    - 'https://github.com/sojohnnysaid/sogos-marketing.git'
   destinations:
     - namespace: mirai
       server: https://kubernetes.default.svc
@@ -16,6 +17,8 @@ spec:
     - namespace: static-sites
       server: https://kubernetes.default.svc
     - namespace: default
+      server: https://kubernetes.default.svc
+    - namespace: sogos-marketing
       server: https://kubernetes.default.svc
   clusterResourceWhitelist: []
   namespaceResourceBlacklist:
