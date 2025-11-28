@@ -20,7 +20,9 @@ spec:
       server: https://kubernetes.default.svc
     - namespace: sogos-marketing
       server: https://kubernetes.default.svc
-  clusterResourceWhitelist: []
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
   namespaceResourceBlacklist:
     - group: ''
       kind: ResourceQuota
