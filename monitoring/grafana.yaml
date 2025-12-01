@@ -99,6 +99,252 @@ data:
       "time": {"from": "now-1h", "to": "now"},
       "schemaVersion": 39
     }
+  cluster-resources-dashboard.json: |
+    {
+      "id": null,
+      "uid": "cluster-resources",
+      "title": "Cluster Resources",
+      "tags": ["cluster", "resources", "cpu", "memory", "network"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "30s",
+      "time": {"from": "now-1h", "to": "now"},
+      "panels": [
+        {
+          "id": 1,
+          "title": "CPU Usage by Node",
+          "type": "timeseries",
+          "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "min": 0,
+              "max": 1,
+              "custom": {"drawStyle": "line", "lineWidth": 2, "fillOpacity": 20}
+            }
+          },
+          "targets": [
+            {
+              "expr": "1 - avg by (node) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m]))",
+              "legendFormat": "{{node}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "title": "Memory Usage by Node",
+          "type": "timeseries",
+          "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "min": 0,
+              "max": 1,
+              "custom": {"drawStyle": "line", "lineWidth": 2, "fillOpacity": 20}
+            }
+          },
+          "targets": [
+            {
+              "expr": "1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)",
+              "legendFormat": "{{node}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "title": "Total CPU Cores",
+          "type": "stat",
+          "gridPos": {"x": 0, "y": 8, "w": 6, "h": 4},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}}},
+          "options": {"colorMode": "value", "graphMode": "none", "justifyMode": "center"},
+          "targets": [
+            {
+              "expr": "sum(machine_cpu_cores)",
+              "legendFormat": "Cores",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "title": "Total Memory",
+          "type": "stat",
+          "gridPos": {"x": 6, "y": 8, "w": 6, "h": 4},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "bytes", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}}},
+          "options": {"colorMode": "value", "graphMode": "none", "justifyMode": "center"},
+          "targets": [
+            {
+              "expr": "sum(node_memory_MemTotal_bytes)",
+              "legendFormat": "Total",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "title": "Memory Available",
+          "type": "stat",
+          "gridPos": {"x": 12, "y": 8, "w": 6, "h": 4},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "bytes", "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 2147483648}, {"color": "green", "value": 8589934592}]}}},
+          "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "center"},
+          "targets": [
+            {
+              "expr": "sum(node_memory_MemAvailable_bytes)",
+              "legendFormat": "Available",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "title": "Cluster CPU %",
+          "type": "gauge",
+          "gridPos": {"x": 18, "y": 8, "w": 6, "h": 4},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "percentunit", "min": 0, "max": 1, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.7}, {"color": "red", "value": 0.9}]}}},
+          "targets": [
+            {
+              "expr": "1 - avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m]))",
+              "legendFormat": "CPU",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 7,
+          "title": "Disk Usage by Node",
+          "type": "timeseries",
+          "gridPos": {"x": 0, "y": 12, "w": 12, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "min": 0,
+              "max": 1,
+              "custom": {"drawStyle": "line", "lineWidth": 2, "fillOpacity": 20},
+              "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.8}, {"color": "red", "value": 0.9}]}
+            }
+          },
+          "targets": [
+            {
+              "expr": "1 - (node_filesystem_avail_bytes{mountpoint=\"/\",fstype!=\"tmpfs\"} / node_filesystem_size_bytes{mountpoint=\"/\",fstype!=\"tmpfs\"})",
+              "legendFormat": "{{node}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 8,
+          "title": "Network Traffic (Receive)",
+          "type": "timeseries",
+          "gridPos": {"x": 12, "y": 12, "w": 12, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "Bps",
+              "custom": {"drawStyle": "line", "lineWidth": 1, "fillOpacity": 10}
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum by (node) (rate(node_network_receive_bytes_total{device!~\"lo|veth.*|cali.*|flannel.*\"}[5m]))",
+              "legendFormat": "{{node}} RX",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 9,
+          "title": "Network Traffic (Transmit)",
+          "type": "timeseries",
+          "gridPos": {"x": 0, "y": 20, "w": 12, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "Bps",
+              "custom": {"drawStyle": "line", "lineWidth": 1, "fillOpacity": 10}
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum by (node) (rate(node_network_transmit_bytes_total{device!~\"lo|veth.*|cali.*|flannel.*\"}[5m]))",
+              "legendFormat": "{{node}} TX",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 10,
+          "title": "Disk I/O",
+          "type": "timeseries",
+          "gridPos": {"x": 12, "y": 20, "w": 12, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "Bps",
+              "custom": {"drawStyle": "line", "lineWidth": 1, "fillOpacity": 10}
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum by (node) (rate(node_disk_read_bytes_total[5m]))",
+              "legendFormat": "{{node}} Read",
+              "refId": "A"
+            },
+            {
+              "expr": "sum by (node) (rate(node_disk_written_bytes_total[5m]))",
+              "legendFormat": "{{node}} Write",
+              "refId": "B"
+            }
+          ]
+        },
+        {
+          "id": 11,
+          "title": "Pod Count by Namespace",
+          "type": "bargauge",
+          "gridPos": {"x": 0, "y": 28, "w": 12, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}}},
+          "options": {"orientation": "horizontal", "displayMode": "gradient", "showUnfilled": true},
+          "targets": [
+            {
+              "expr": "sum by (namespace) (kube_pod_info) or count by (namespace) (container_memory_usage_bytes{container!=\"\",container!=\"POD\"})",
+              "legendFormat": "{{namespace}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 12,
+          "title": "Node Status",
+          "type": "stat",
+          "gridPos": {"x": 12, "y": 28, "w": 12, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [{"type": "value", "options": {"1": {"text": "Ready", "color": "green"}, "0": {"text": "Not Ready", "color": "red"}}}],
+              "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
+            }
+          },
+          "options": {"colorMode": "background", "graphMode": "none", "justifyMode": "center"},
+          "targets": [
+            {
+              "expr": "kube_node_status_condition{condition=\"Ready\",status=\"true\"} or up{job=\"kubernetes-nodes\"}",
+              "legendFormat": "{{node}}",
+              "refId": "A"
+            }
+          ]
+        }
+      ]
+    }
   subdomain-availability-dashboard.json: |
     {
       "id": null,
