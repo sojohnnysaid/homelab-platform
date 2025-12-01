@@ -204,10 +204,12 @@ data:
         target_label: pod
       - source_labels: [__meta_kubernetes_pod_container_name]
         target_label: container
+      # Build __path__ label for log file location
+      # Talos stores logs at: /var/log/pods/{namespace}_{podname}_{uid}/{container}/*.log
       - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_pod_name, __meta_kubernetes_pod_uid, __meta_kubernetes_pod_container_name]
-        separator: /
-        regex: (.+)/(.+)/(.+)/(.+)
-        replacement: /var/log/pods/$1_$2_$3/$4/0.log
+        separator: ;
+        regex: (.+);(.+);(.+);(.+)
+        replacement: /var/log/pods/$1_$2_$3/$4/*.log
         target_label: __path__
       # Drop debug level logs to reduce volume
       pipeline_stages:
