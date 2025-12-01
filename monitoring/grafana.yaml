@@ -142,7 +142,7 @@ data:
           },
           "targets": [
             {
-              "expr": "probe_success{job=\"blackbox-subdomain-availability\"}",
+              "expr": "max by (subdomain) (probe_success{job=\"blackbox-subdomain-availability\"})",
               "legendFormat": "{{subdomain}}",
               "refId": "A"
             }
@@ -177,7 +177,7 @@ data:
           "options": {"legend": {"displayMode": "table", "placement": "right"}},
           "targets": [
             {
-              "expr": "probe_success{job=\"blackbox-subdomain-availability\"}",
+              "expr": "max by (subdomain) (probe_success{job=\"blackbox-subdomain-availability\"})",
               "legendFormat": "{{subdomain}}",
               "refId": "A"
             }
@@ -210,7 +210,7 @@ data:
           "options": {"legend": {"displayMode": "table", "placement": "right"}},
           "targets": [
             {
-              "expr": "probe_duration_seconds{job=\"blackbox-subdomain-availability\"}",
+              "expr": "min by (subdomain) (probe_duration_seconds{job=\"blackbox-subdomain-availability\"} and probe_success{job=\"blackbox-subdomain-availability\"} == 1)",
               "legendFormat": "{{subdomain}}",
               "refId": "A"
             }
@@ -244,7 +244,7 @@ data:
           },
           "targets": [
             {
-              "expr": "avg_over_time(probe_success{job=\"blackbox-subdomain-availability\"}[24h])",
+              "expr": "max by (subdomain) (avg_over_time(probe_success{job=\"blackbox-subdomain-availability\"}[24h]))",
               "legendFormat": "{{subdomain}}",
               "refId": "A"
             }
@@ -278,7 +278,7 @@ data:
           },
           "targets": [
             {
-              "expr": "(probe_ssl_earliest_cert_expiry{job=\"blackbox-subdomain-availability\"} - time()) / 86400",
+              "expr": "max by (subdomain) ((probe_ssl_earliest_cert_expiry{job=\"blackbox-subdomain-availability\"} - time()) / 86400)",
               "legendFormat": "{{subdomain}}",
               "refId": "A"
             }
