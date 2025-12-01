@@ -818,8 +818,8 @@ data:
         - https://health.sogos.io
         - https://mirai.sogos.io
         - https://get-mirai.sogos.io
-        - https://mirai-api.sogos.io
-        - https://mirai-auth.sogos.io
+        - https://mirai-api.sogos.io/health
+        - https://mirai-auth.sogos.io/health/alive
         - https://mailpit.sogos.io
         - https://argocd.sogos.io
         - https://grafana.sogos.io
@@ -832,7 +832,7 @@ data:
       - source_labels: [__param_target]
         target_label: instance
       - source_labels: [__param_target]
-        regex: 'https://([^.]+)\.sogos\.io'
+        regex: 'https://([^.]+)\.sogos\.io.*'
         replacement: '$1'
         target_label: subdomain
       - target_label: __address__
