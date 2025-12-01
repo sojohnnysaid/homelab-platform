@@ -44,14 +44,14 @@ data:
     ruler:
       alertmanager_url: http://localhost:9093
 
-    # Retention policies to prevent data bloat
+    # Retention policies - keep logs for 7 days
     limits_config:
       enforce_metric_name: false
       reject_old_samples: true
       reject_old_samples_max_age: 168h  # 7 days
       ingestion_rate_mb: 10
       ingestion_burst_size_mb: 20
-      retention_period: 168h  # Keep logs for 7 days only
+      retention_period: 168h  # Keep logs for 7 days
       max_query_series: 5000
       max_query_parallelism: 16
 
@@ -167,7 +167,7 @@ data:
     server:
       http_listen_port: 9080
       grpc_listen_port: 0
-      log_level: warn  # Reduce log verbosity
+      log_level: info  # Debug: increased from warn
 
     positions:
       filename: /tmp/positions.yaml
@@ -184,10 +184,10 @@ data:
       kubernetes_sd_configs:
       - role: pod
       relabel_configs:
-      # Only collect logs from specific namespaces
+      # Collect logs from all application namespaces
       - source_labels: [__meta_kubernetes_namespace]
         action: keep
-        regex: default|kube-system|monitoring
+        regex: default|kube-system|monitoring|mirai|kratos|ingress|postgres|redis|argocd|static-sites|sogos-marketing|nfs-provisioner
       - source_labels: [__meta_kubernetes_pod_label_name]
         target_label: __service__
       - source_labels: [__meta_kubernetes_pod_node_name]

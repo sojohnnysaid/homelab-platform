@@ -321,10 +321,10 @@ data:
         },
         {
           "id": 7,
-          "title": "Note: Container CPU/Memory metrics not available",
+          "title": "Container Metrics Available",
           "type": "text",
           "gridPos": {"x": 0, "y": 24, "w": 24, "h": 2},
-          "options": {"mode": "markdown", "content": "**Note:** Container-level CPU and memory metrics are not available (cAdvisor metrics missing on Talos). Use Cluster Resources dashboard for node-level metrics."}
+          "options": {"mode": "markdown", "content": "**Container Metrics:** See the [Container Metrics](/d/container-metrics) dashboard for detailed CPU and memory usage by namespace."}
         }
       ]
     }
@@ -430,67 +430,72 @@ data:
       "version": 1,
       "refresh": "30s",
       "time": {"from": "now-1h", "to": "now"},
+      "templating": {
+        "list": [
+          {
+            "name": "namespace",
+            "type": "query",
+            "datasource": "Loki",
+            "query": "label_values(namespace)",
+            "refresh": 2,
+            "includeAll": true,
+            "multi": true,
+            "allValue": ".+",
+            "current": {"selected": true, "text": "All", "value": "$__all"}
+          },
+          {
+            "name": "search",
+            "type": "textbox",
+            "current": {"text": "", "value": ""},
+            "label": "Search"
+          }
+        ]
+      },
       "panels": [
         {
-          "id": 0,
-          "title": "Log Shipping Required",
-          "type": "text",
-          "gridPos": {"x": 0, "y": 0, "w": 24, "h": 3},
-          "options": {"mode": "markdown", "content": "**Logs are not available.** Loki requires a log shipper (Promtail, Fluent Bit, or Vector) to collect and send logs from pods. Deploy a DaemonSet to ship logs to Loki."}
-        },
-        {
           "id": 1,
-          "title": "Error Logs (All Namespaces)",
+          "title": "All Logs",
           "type": "logs",
-          "gridPos": {"x": 0, "y": 3, "w": 24, "h": 10},
+          "gridPos": {"x": 0, "y": 0, "w": 24, "h": 12},
           "datasource": "Loki",
-          "targets": [{"expr": "{namespace=~\".+\"} |~ \"(?i)error|exception|fatal|panic|fail\"", "refId": "A"}],
+          "targets": [{"expr": "{namespace=~\"$namespace\"} |~ \"$search\"", "refId": "A"}],
           "options": {"showTime": true, "showLabels": true, "showCommonLabels": false, "wrapLogMessage": true, "sortOrder": "Descending", "dedupStrategy": "none", "enableLogDetails": true}
         },
         {
           "id": 2,
-          "title": "Mirai Backend Logs",
+          "title": "Error Logs",
           "type": "logs",
-          "gridPos": {"x": 0, "y": 10, "w": 12, "h": 10},
+          "gridPos": {"x": 0, "y": 12, "w": 24, "h": 10},
           "datasource": "Loki",
-          "targets": [{"expr": "{namespace=\"mirai\",pod=~\"mirai-backend.*\"}", "refId": "A"}],
-          "options": {"showTime": true, "showLabels": false, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true}
+          "targets": [{"expr": "{namespace=~\"$namespace\"} |~ \"(?i)error|exception|fatal|panic|fail\"", "refId": "A"}],
+          "options": {"showTime": true, "showLabels": true, "showCommonLabels": false, "wrapLogMessage": true, "sortOrder": "Descending", "dedupStrategy": "none", "enableLogDetails": true}
         },
         {
           "id": 3,
-          "title": "Mirai Frontend Logs",
+          "title": "Mirai Logs",
           "type": "logs",
-          "gridPos": {"x": 12, "y": 10, "w": 12, "h": 10},
+          "gridPos": {"x": 0, "y": 22, "w": 12, "h": 10},
           "datasource": "Loki",
-          "targets": [{"expr": "{namespace=\"mirai\",pod=~\"mirai-frontend.*\"}", "refId": "A"}],
+          "targets": [{"expr": "{namespace=\"mirai\"}", "refId": "A"}],
           "options": {"showTime": true, "showLabels": false, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true}
         },
         {
           "id": 4,
           "title": "Kratos Auth Logs",
           "type": "logs",
-          "gridPos": {"x": 0, "y": 20, "w": 12, "h": 10},
+          "gridPos": {"x": 12, "y": 22, "w": 12, "h": 10},
           "datasource": "Loki",
           "targets": [{"expr": "{namespace=\"kratos\"}", "refId": "A"}],
           "options": {"showTime": true, "showLabels": false, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true}
         },
         {
           "id": 5,
-          "title": "Ingress Logs (Cloudflared)",
-          "type": "logs",
-          "gridPos": {"x": 12, "y": 20, "w": 12, "h": 10},
-          "datasource": "Loki",
-          "targets": [{"expr": "{namespace=\"ingress\",app=\"cloudflared\"}", "refId": "A"}],
-          "options": {"showTime": true, "showLabels": false, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true}
-        },
-        {
-          "id": 6,
           "title": "Log Volume by Namespace",
           "type": "timeseries",
-          "gridPos": {"x": 0, "y": 30, "w": 24, "h": 6},
+          "gridPos": {"x": 0, "y": 32, "w": 24, "h": 6},
           "datasource": "Loki",
           "fieldConfig": {"defaults": {"unit": "short", "custom": {"drawStyle": "bars", "fillOpacity": 80, "stacking": {"mode": "normal"}}}},
-          "targets": [{"expr": "sum by (namespace) (count_over_time({namespace=~\".+\"}[5m]))", "legendFormat": "{{namespace}}", "refId": "A"}]
+          "targets": [{"expr": "sum by (namespace) (count_over_time({namespace=~\"$namespace\"}[5m]))", "legendFormat": "{{namespace}}", "refId": "A"}]
         }
       ]
     }
@@ -927,6 +932,153 @@ data:
         }
       ]
     }
+  container-metrics-dashboard.json: |
+    {
+      "id": null,
+      "uid": "container-metrics",
+      "title": "Container Metrics",
+      "tags": ["containers", "cpu", "memory", "namespace"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "30s",
+      "time": {"from": "now-1h", "to": "now"},
+      "templating": {
+        "list": [
+          {
+            "name": "namespace",
+            "type": "query",
+            "datasource": "Prometheus",
+            "query": "label_values(container_memory_working_set_bytes{namespace!=\"\"}, namespace)",
+            "refresh": 2,
+            "includeAll": true,
+            "multi": true,
+            "allValue": ".*",
+            "current": {"selected": true, "text": "All", "value": "$__all"}
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1,
+          "title": "CPU Usage by Container",
+          "type": "timeseries",
+          "gridPos": {"x": 0, "y": 0, "w": 24, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "short", "custom": {"drawStyle": "line", "fillOpacity": 20}}},
+          "targets": [
+            {
+              "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", container!=\"\", container!=\"POD\"}[5m])) by (namespace, pod, container)",
+              "legendFormat": "{{namespace}}/{{pod}}/{{container}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "title": "Memory Usage by Container",
+          "type": "timeseries",
+          "gridPos": {"x": 0, "y": 8, "w": 24, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "bytes", "custom": {"drawStyle": "line", "fillOpacity": 20}}},
+          "targets": [
+            {
+              "expr": "sum(container_memory_working_set_bytes{namespace=~\"$namespace\", container!=\"\", container!=\"POD\"}) by (namespace, pod, container)",
+              "legendFormat": "{{namespace}}/{{pod}}/{{container}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "title": "CPU Usage by Namespace",
+          "type": "bargauge",
+          "gridPos": {"x": 0, "y": 16, "w": 12, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.5}, {"color": "red", "value": 1}]}}},
+          "options": {"orientation": "horizontal", "displayMode": "gradient", "showUnfilled": true},
+          "targets": [
+            {
+              "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", container!=\"\", container!=\"POD\"}[5m])) by (namespace)",
+              "legendFormat": "{{namespace}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "title": "Memory Usage by Namespace",
+          "type": "bargauge",
+          "gridPos": {"x": 12, "y": 16, "w": 12, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "bytes", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 536870912}, {"color": "red", "value": 1073741824}]}}},
+          "options": {"orientation": "horizontal", "displayMode": "gradient", "showUnfilled": true},
+          "targets": [
+            {
+              "expr": "sum(container_memory_working_set_bytes{namespace=~\"$namespace\", container!=\"\", container!=\"POD\"}) by (namespace)",
+              "legendFormat": "{{namespace}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "title": "Top 10 CPU Consumers",
+          "type": "table",
+          "gridPos": {"x": 0, "y": 24, "w": 12, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "short", "decimals": 3}},
+          "options": {"showHeader": true, "sortBy": [{"desc": true, "displayName": "CPU Cores"}]},
+          "targets": [
+            {
+              "expr": "topk(10, sum(rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", container!=\"\", container!=\"POD\"}[5m])) by (namespace, pod, container))",
+              "refId": "A",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "transformations": [
+            {"id": "organize", "options": {"excludeByName": {"Time": true}, "renameByName": {"Value": "CPU Cores", "container": "Container", "namespace": "Namespace", "pod": "Pod"}}}
+          ]
+        },
+        {
+          "id": 6,
+          "title": "Top 10 Memory Consumers",
+          "type": "table",
+          "gridPos": {"x": 12, "y": 24, "w": 12, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "bytes", "decimals": 0}},
+          "options": {"showHeader": true, "sortBy": [{"desc": true, "displayName": "Memory"}]},
+          "targets": [
+            {
+              "expr": "topk(10, sum(container_memory_working_set_bytes{namespace=~\"$namespace\", container!=\"\", container!=\"POD\"}) by (namespace, pod, container))",
+              "refId": "A",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "transformations": [
+            {"id": "organize", "options": {"excludeByName": {"Time": true}, "renameByName": {"Value": "Memory", "container": "Container", "namespace": "Namespace", "pod": "Pod"}}}
+          ]
+        },
+        {
+          "id": 7,
+          "title": "Container Count by Namespace",
+          "type": "stat",
+          "gridPos": {"x": 0, "y": 32, "w": 24, "h": 4},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}]}}},
+          "options": {"colorMode": "value", "graphMode": "none", "justifyMode": "auto"},
+          "targets": [
+            {
+              "expr": "count(container_memory_working_set_bytes{namespace=~\"$namespace\", container!=\"\", container!=\"POD\"}) by (namespace)",
+              "legendFormat": "{{namespace}}",
+              "refId": "A"
+            }
+          ]
+        }
+      ]
+    }
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -1312,6 +1464,34 @@ data:
         replacement: $1:9100
         target_label: __address__
 
+    # cAdvisor (container metrics)
+    - job_name: 'cadvisor'
+      kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+          - monitoring
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        action: keep
+        regex: cadvisor
+      - source_labels: [__meta_kubernetes_pod_node_name]
+        target_label: node
+      - source_labels: [__address__]
+        action: replace
+        regex: ([^:]+)(?::\d+)?
+        replacement: $1:8080
+        target_label: __address__
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+      metric_relabel_configs:
+      - source_labels: [container]
+        regex: ''
+        action: drop
+      - source_labels: [container]
+        regex: 'POD'
+        action: drop
+
     # Pod metrics across all namespaces
     - job_name: 'kubernetes-pods'
       kubernetes_sd_configs:
@@ -1586,10 +1766,17 @@ rules:
   resources:
   - nodes
   - nodes/proxy
+  - nodes/metrics
   - services
   - endpoints
   - pods
   verbs: ["get", "list", "watch"]
+- nonResourceURLs:
+  - /metrics
+  - /metrics/cadvisor
+  - /metrics/resource
+  - /metrics/probes
+  verbs: ["get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
