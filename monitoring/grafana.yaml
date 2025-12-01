@@ -59,24 +59,19 @@ data:
       "panels": [
         {
           "id": 1,
-          "title": "Pod Status by Namespace",
-          "type": "stat",
-          "gridPos": {"x": 0, "y": 0, "w": 24, "h": 4},
+          "title": "Running Pods by Namespace",
+          "type": "bargauge",
+          "gridPos": {"x": 0, "y": 0, "w": 24, "h": 6},
           "datasource": "Prometheus",
-          "fieldConfig": {
-            "defaults": {
-              "mappings": [{"type": "value", "options": {"1": {"text": "Running", "color": "green"}, "0": {"text": "Not Running", "color": "red"}}}],
-              "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
-            }
-          },
-          "options": {"colorMode": "background", "graphMode": "none", "justifyMode": "center", "textMode": "name"},
-          "targets": [{"expr": "sum by (namespace) (kube_pod_status_phase{phase=\"Running\"}) / sum by (namespace) (kube_pod_status_phase) or up{job=\"kubernetes-pods\"}", "legendFormat": "{{namespace}}", "refId": "A"}]
+          "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}}},
+          "options": {"orientation": "horizontal", "displayMode": "gradient", "showUnfilled": true},
+          "targets": [{"expr": "sum by (namespace) (kube_pod_status_phase{phase=\"Running\"})", "legendFormat": "{{namespace}}", "refId": "A"}]
         },
         {
           "id": 2,
-          "title": "Mirai Services Status",
+          "title": "Mirai Deployments",
           "type": "stat",
-          "gridPos": {"x": 0, "y": 4, "w": 24, "h": 4},
+          "gridPos": {"x": 0, "y": 6, "w": 24, "h": 4},
           "datasource": "Prometheus",
           "fieldConfig": {
             "defaults": {
@@ -85,53 +80,54 @@ data:
             }
           },
           "options": {"colorMode": "background", "graphMode": "none", "justifyMode": "center"},
-          "targets": [
-            {"expr": "count(kube_pod_status_phase{namespace=\"mirai\",phase=\"Running\"}) by (pod) or sum by (pod) (up{namespace=\"mirai\"})", "legendFormat": "{{pod}}", "refId": "A"}
-          ]
+          "targets": [{"expr": "kube_deployment_status_replicas_ready{namespace=\"mirai\"}", "legendFormat": "{{deployment}}", "refId": "A"}]
         },
         {
           "id": 3,
           "title": "Pod Restarts (Last 24h)",
           "type": "timeseries",
-          "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+          "gridPos": {"x": 0, "y": 10, "w": 12, "h": 8},
           "datasource": "Prometheus",
           "fieldConfig": {"defaults": {"unit": "short", "custom": {"drawStyle": "bars", "fillOpacity": 80}}},
-          "targets": [{"expr": "increase(kube_pod_container_status_restarts_total[24h]) > 0", "legendFormat": "{{namespace}}/{{pod}}", "refId": "A"}]
+          "targets": [{"expr": "topk(10, increase(kube_pod_container_status_restarts_total[24h]) > 0)", "legendFormat": "{{namespace}}/{{pod}}", "refId": "A"}]
         },
         {
           "id": 4,
-          "title": "Container Memory Usage",
+          "title": "Deployment Availability",
           "type": "timeseries",
-          "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
+          "gridPos": {"x": 12, "y": 10, "w": 12, "h": 8},
           "datasource": "Prometheus",
-          "fieldConfig": {"defaults": {"unit": "bytes", "custom": {"drawStyle": "line", "fillOpacity": 20}}},
-          "targets": [{"expr": "sum by (namespace, pod) (container_memory_working_set_bytes{container!=\"\",container!=\"POD\"})", "legendFormat": "{{namespace}}/{{pod}}", "refId": "A"}]
+          "fieldConfig": {"defaults": {"unit": "short", "custom": {"drawStyle": "line", "fillOpacity": 20}}},
+          "targets": [{"expr": "kube_deployment_status_replicas_available{namespace=~\"mirai|kratos|ingress\"}", "legendFormat": "{{namespace}}/{{deployment}}", "refId": "A"}]
         },
         {
           "id": 5,
-          "title": "Container CPU Usage",
+          "title": "Desired vs Ready Replicas",
           "type": "timeseries",
-          "gridPos": {"x": 0, "y": 16, "w": 12, "h": 8},
+          "gridPos": {"x": 0, "y": 18, "w": 12, "h": 8},
           "datasource": "Prometheus",
-          "fieldConfig": {"defaults": {"unit": "percentunit", "custom": {"drawStyle": "line", "fillOpacity": 20}}},
-          "targets": [{"expr": "sum by (namespace, pod) (rate(container_cpu_usage_seconds_total{container!=\"\",container!=\"POD\"}[5m]))", "legendFormat": "{{namespace}}/{{pod}}", "refId": "A"}]
+          "fieldConfig": {"defaults": {"unit": "short", "custom": {"drawStyle": "line", "fillOpacity": 10}}},
+          "targets": [
+            {"expr": "sum(kube_deployment_spec_replicas)", "legendFormat": "Desired", "refId": "A"},
+            {"expr": "sum(kube_deployment_status_replicas_ready)", "legendFormat": "Ready", "refId": "B"}
+          ]
         },
         {
           "id": 6,
           "title": "Ready Replicas by Deployment",
           "type": "table",
-          "gridPos": {"x": 12, "y": 16, "w": 12, "h": 8},
+          "gridPos": {"x": 12, "y": 18, "w": 12, "h": 8},
           "datasource": "Prometheus",
           "fieldConfig": {"defaults": {"thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}}},
           "options": {"showHeader": true},
-          "targets": [{"expr": "kube_deployment_status_replicas_ready", "legendFormat": "{{namespace}}/{{deployment}}", "refId": "A", "format": "table", "instant": true}],
+          "targets": [{"expr": "kube_deployment_status_replicas_ready", "legendFormat": "", "refId": "A", "format": "table", "instant": true}],
           "transformations": [{"id": "organize", "options": {"excludeByName": {"Time": true, "__name__": true, "instance": true, "job": true}, "renameByName": {"Value": "Ready", "deployment": "Deployment", "namespace": "Namespace"}}}]
         },
         {
           "id": 7,
-          "title": "OOMKilled Containers (Last 24h)",
+          "title": "OOMKilled (24h)",
           "type": "stat",
-          "gridPos": {"x": 0, "y": 24, "w": 8, "h": 4},
+          "gridPos": {"x": 0, "y": 26, "w": 8, "h": 4},
           "datasource": "Prometheus",
           "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}},
           "options": {"colorMode": "value", "graphMode": "none", "justifyMode": "center"},
@@ -139,9 +135,9 @@ data:
         },
         {
           "id": 8,
-          "title": "CrashLoopBackOff Pods",
+          "title": "CrashLoopBackOff",
           "type": "stat",
-          "gridPos": {"x": 8, "y": 24, "w": 8, "h": 4},
+          "gridPos": {"x": 8, "y": 26, "w": 8, "h": 4},
           "datasource": "Prometheus",
           "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}},
           "options": {"colorMode": "value", "graphMode": "none", "justifyMode": "center"},
@@ -151,7 +147,7 @@ data:
           "id": 9,
           "title": "Pending Pods",
           "type": "stat",
-          "gridPos": {"x": 16, "y": 24, "w": 8, "h": 4},
+          "gridPos": {"x": 16, "y": 26, "w": 8, "h": 4},
           "datasource": "Prometheus",
           "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 5}]}}},
           "options": {"colorMode": "value", "graphMode": "none", "justifyMode": "center"},
@@ -261,86 +257,74 @@ data:
             }
           },
           "options": {"colorMode": "background", "graphMode": "none", "justifyMode": "center"},
-          "targets": [{"expr": "sum(kube_pod_status_phase{namespace=\"mirai\",pod=~\"mirai-db.*\",phase=\"Running\"}) or vector(0)", "legendFormat": "mirai-db", "refId": "A"}]
+          "targets": [{"expr": "kube_pod_status_phase{namespace=\"mirai\",pod=~\"mirai-db.*\",phase=\"Running\"}", "legendFormat": "{{pod}}", "refId": "A"}]
         },
         {
           "id": 2,
-          "title": "Database CPU Usage",
-          "type": "gauge",
-          "gridPos": {"x": 8, "y": 0, "w": 8, "h": 4},
-          "datasource": "Prometheus",
-          "fieldConfig": {"defaults": {"unit": "percentunit", "min": 0, "max": 1, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.7}, {"color": "red", "value": 0.9}]}}},
-          "targets": [{"expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"mirai\",pod=~\"mirai-db.*\",container!=\"\",container!=\"POD\"}[5m]))", "legendFormat": "CPU", "refId": "A"}]
-        },
-        {
-          "id": 3,
-          "title": "Database Memory Usage",
-          "type": "gauge",
-          "gridPos": {"x": 16, "y": 0, "w": 8, "h": 4},
-          "datasource": "Prometheus",
-          "fieldConfig": {"defaults": {"unit": "bytes", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1073741824}, {"color": "red", "value": 2147483648}]}}},
-          "targets": [{"expr": "sum(container_memory_working_set_bytes{namespace=\"mirai\",pod=~\"mirai-db.*\",container!=\"\",container!=\"POD\"})", "legendFormat": "Memory", "refId": "A"}]
-        },
-        {
-          "id": 4,
-          "title": "Database CPU Over Time",
-          "type": "timeseries",
-          "gridPos": {"x": 0, "y": 4, "w": 12, "h": 8},
-          "datasource": "Prometheus",
-          "fieldConfig": {"defaults": {"unit": "percentunit", "custom": {"drawStyle": "line", "fillOpacity": 20}}},
-          "targets": [{"expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"mirai\",pod=~\"mirai-db.*\",container!=\"\",container!=\"POD\"}[5m]))", "legendFormat": "mirai-db CPU", "refId": "A"}]
-        },
-        {
-          "id": 5,
-          "title": "Database Memory Over Time",
-          "type": "timeseries",
-          "gridPos": {"x": 12, "y": 4, "w": 12, "h": 8},
-          "datasource": "Prometheus",
-          "fieldConfig": {"defaults": {"unit": "bytes", "custom": {"drawStyle": "line", "fillOpacity": 20}}},
-          "targets": [{"expr": "sum(container_memory_working_set_bytes{namespace=\"mirai\",pod=~\"mirai-db.*\",container!=\"\",container!=\"POD\"})", "legendFormat": "mirai-db Memory", "refId": "A"}]
-        },
-        {
-          "id": 6,
-          "title": "Database Disk I/O",
-          "type": "timeseries",
-          "gridPos": {"x": 0, "y": 12, "w": 12, "h": 8},
-          "datasource": "Prometheus",
-          "fieldConfig": {"defaults": {"unit": "Bps", "custom": {"drawStyle": "line", "fillOpacity": 10}}},
-          "targets": [
-            {"expr": "sum(rate(container_fs_reads_bytes_total{namespace=\"mirai\",pod=~\"mirai-db.*\",container!=\"\",container!=\"POD\"}[5m]))", "legendFormat": "Read", "refId": "A"},
-            {"expr": "sum(rate(container_fs_writes_bytes_total{namespace=\"mirai\",pod=~\"mirai-db.*\",container!=\"\",container!=\"POD\"}[5m]))", "legendFormat": "Write", "refId": "B"}
-          ]
-        },
-        {
-          "id": 7,
-          "title": "Database Network I/O",
-          "type": "timeseries",
-          "gridPos": {"x": 12, "y": 12, "w": 12, "h": 8},
-          "datasource": "Prometheus",
-          "fieldConfig": {"defaults": {"unit": "Bps", "custom": {"drawStyle": "line", "fillOpacity": 10}}},
-          "targets": [
-            {"expr": "sum(rate(container_network_receive_bytes_total{namespace=\"mirai\",pod=~\"mirai-db.*\"}[5m]))", "legendFormat": "RX", "refId": "A"},
-            {"expr": "sum(rate(container_network_transmit_bytes_total{namespace=\"mirai\",pod=~\"mirai-db.*\"}[5m]))", "legendFormat": "TX", "refId": "B"}
-          ]
-        },
-        {
-          "id": 8,
           "title": "Database Pod Restarts",
           "type": "stat",
-          "gridPos": {"x": 0, "y": 20, "w": 12, "h": 4},
+          "gridPos": {"x": 8, "y": 0, "w": 8, "h": 4},
           "datasource": "Prometheus",
           "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 3}]}}},
           "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "center"},
           "targets": [{"expr": "sum(kube_pod_container_status_restarts_total{namespace=\"mirai\",pod=~\"mirai-db.*\"})", "legendFormat": "Restarts", "refId": "A"}]
         },
         {
-          "id": 9,
-          "title": "Database Logs",
-          "type": "logs",
-          "gridPos": {"x": 0, "y": 24, "w": 24, "h": 8},
-          "datasource": "Loki",
-          "targets": [{"expr": "{namespace=\"mirai\",pod=~\"mirai-db.*\"}", "refId": "A"}],
-          "options": {"showTime": true, "showLabels": false, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true}
+          "id": 3,
+          "title": "Container Ready",
+          "type": "stat",
+          "gridPos": {"x": 16, "y": 0, "w": 8, "h": 4},
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [{"type": "value", "options": {"1": {"text": "Ready", "color": "green"}, "0": {"text": "Not Ready", "color": "red"}}}],
+              "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
+            }
+          },
+          "options": {"colorMode": "background", "graphMode": "none", "justifyMode": "center"},
+          "targets": [{"expr": "kube_pod_container_status_ready{namespace=\"mirai\",pod=~\"mirai-db.*\"}", "legendFormat": "{{container}}", "refId": "A"}]
+        },
+        {
+          "id": 4,
+          "title": "All Database Services",
+          "type": "stat",
+          "gridPos": {"x": 0, "y": 4, "w": 24, "h": 4},
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [{"type": "range", "options": {"from": 1, "to": 999, "result": {"text": "Running", "color": "green"}}}, {"type": "value", "options": {"0": {"text": "Down", "color": "red"}}}],
+              "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
+            }
+          },
+          "options": {"colorMode": "background", "graphMode": "none", "justifyMode": "center"},
+          "targets": [{"expr": "kube_pod_status_phase{namespace=~\"postgres|redis\",phase=\"Running\"}", "legendFormat": "{{namespace}}/{{pod}}", "refId": "A"}]
+        },
+        {
+          "id": 5,
+          "title": "Pod Restarts Over Time",
+          "type": "timeseries",
+          "gridPos": {"x": 0, "y": 8, "w": 24, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "short", "custom": {"drawStyle": "bars", "fillOpacity": 80}}},
+          "targets": [{"expr": "increase(kube_pod_container_status_restarts_total{namespace=~\"mirai|postgres|redis\"}[1h])", "legendFormat": "{{namespace}}/{{pod}}", "refId": "A"}]
+        },
+        {
+          "id": 6,
+          "title": "Container State",
+          "type": "table",
+          "gridPos": {"x": 0, "y": 16, "w": 24, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}}},
+          "options": {"showHeader": true},
+          "targets": [{"expr": "kube_pod_container_status_running{namespace=~\"mirai|postgres|redis\"}", "refId": "A", "format": "table", "instant": true}],
+          "transformations": [{"id": "organize", "options": {"excludeByName": {"Time": true, "__name__": true, "instance": true, "job": true, "uid": true}, "renameByName": {"Value": "Running", "container": "Container", "namespace": "Namespace", "pod": "Pod"}}}]
+        },
+        {
+          "id": 7,
+          "title": "Note: Container CPU/Memory metrics not available",
+          "type": "text",
+          "gridPos": {"x": 0, "y": 24, "w": 24, "h": 2},
+          "options": {"mode": "markdown", "content": "**Note:** Container-level CPU and memory metrics are not available (cAdvisor metrics missing on Talos). Use Cluster Resources dashboard for node-level metrics."}
         }
       ]
     }
@@ -448,10 +432,17 @@ data:
       "time": {"from": "now-1h", "to": "now"},
       "panels": [
         {
+          "id": 0,
+          "title": "Log Shipping Required",
+          "type": "text",
+          "gridPos": {"x": 0, "y": 0, "w": 24, "h": 3},
+          "options": {"mode": "markdown", "content": "**Logs are not available.** Loki requires a log shipper (Promtail, Fluent Bit, or Vector) to collect and send logs from pods. Deploy a DaemonSet to ship logs to Loki."}
+        },
+        {
           "id": 1,
           "title": "Error Logs (All Namespaces)",
           "type": "logs",
-          "gridPos": {"x": 0, "y": 0, "w": 24, "h": 10},
+          "gridPos": {"x": 0, "y": 3, "w": 24, "h": 10},
           "datasource": "Loki",
           "targets": [{"expr": "{namespace=~\".+\"} |~ \"(?i)error|exception|fatal|panic|fail\"", "refId": "A"}],
           "options": {"showTime": true, "showLabels": true, "showCommonLabels": false, "wrapLogMessage": true, "sortOrder": "Descending", "dedupStrategy": "none", "enableLogDetails": true}
