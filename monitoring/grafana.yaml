@@ -45,59 +45,463 @@ metadata:
   name: grafana-dashboards
   namespace: monitoring
 data:
-  dns-cache-dashboard.json: |
+  application-health-dashboard.json: |
     {
-      "title": "DNS Cache & Resolution Monitor",
-      "uid": "dns-cache",
+      "id": null,
+      "uid": "app-health",
+      "title": "Application Health",
+      "tags": ["applications", "health", "pods"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "30s",
+      "time": {"from": "now-1h", "to": "now"},
       "panels": [
         {
-          "title": "DNS Query Rate",
-          "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+          "id": 1,
+          "title": "Pod Status by Namespace",
+          "type": "stat",
+          "gridPos": {"x": 0, "y": 0, "w": 24, "h": 4},
           "datasource": "Prometheus",
-          "targets": [
-            {
-              "expr": "rate(coredns_dns_requests_total[5m])"
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [{"type": "value", "options": {"1": {"text": "Running", "color": "green"}, "0": {"text": "Not Running", "color": "red"}}}],
+              "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
             }
-          ],
-          "type": "graph"
+          },
+          "options": {"colorMode": "background", "graphMode": "none", "justifyMode": "center", "textMode": "name"},
+          "targets": [{"expr": "sum by (namespace) (kube_pod_status_phase{phase=\"Running\"}) / sum by (namespace) (kube_pod_status_phase) or up{job=\"kubernetes-pods\"}", "legendFormat": "{{namespace}}", "refId": "A"}]
         },
         {
-          "title": "DNS Cache Hit Ratio",
-          "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+          "id": 2,
+          "title": "Mirai Services Status",
+          "type": "stat",
+          "gridPos": {"x": 0, "y": 4, "w": 24, "h": 4},
           "datasource": "Prometheus",
-          "targets": [
-            {
-              "expr": "coredns_cache_hits_total / (coredns_cache_hits_total + coredns_cache_misses_total)"
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [{"type": "range", "options": {"from": 1, "to": 999, "result": {"text": "UP", "color": "green"}}}, {"type": "value", "options": {"0": {"text": "DOWN", "color": "red"}}}],
+              "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
             }
-          ],
-          "type": "stat"
+          },
+          "options": {"colorMode": "background", "graphMode": "none", "justifyMode": "center"},
+          "targets": [
+            {"expr": "count(kube_pod_status_phase{namespace=\"mirai\",phase=\"Running\"}) by (pod) or sum by (pod) (up{namespace=\"mirai\"})", "legendFormat": "{{pod}}", "refId": "A"}
+          ]
         },
         {
-          "title": "DNS Errors (Last Hour)",
-          "gridPos": {"x": 0, "y": 8, "w": 24, "h": 8},
-          "datasource": "Loki",
-          "targets": [
-            {
-              "expr": "{namespace=\"kube-system\", app=\"node-local-dns\"} |~ \"error|timeout|fail\""
-            }
-          ],
-          "type": "logs"
+          "id": 3,
+          "title": "Pod Restarts (Last 24h)",
+          "type": "timeseries",
+          "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "short", "custom": {"drawStyle": "bars", "fillOpacity": 80}}},
+          "targets": [{"expr": "increase(kube_pod_container_status_restarts_total[24h]) > 0", "legendFormat": "{{namespace}}/{{pod}}", "refId": "A"}]
         },
         {
-          "title": "CloudFlare Tunnel Status",
-          "gridPos": {"x": 0, "y": 16, "w": 24, "h": 8},
-          "datasource": "Loki",
-          "targets": [
-            {
-              "expr": "{app=\"cloudflared\"} |~ \"error|fail|disconnect|timeout\""
-            }
-          ],
-          "type": "logs"
+          "id": 4,
+          "title": "Container Memory Usage",
+          "type": "timeseries",
+          "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "bytes", "custom": {"drawStyle": "line", "fillOpacity": 20}}},
+          "targets": [{"expr": "sum by (namespace, pod) (container_memory_working_set_bytes{container!=\"\",container!=\"POD\"})", "legendFormat": "{{namespace}}/{{pod}}", "refId": "A"}]
+        },
+        {
+          "id": 5,
+          "title": "Container CPU Usage",
+          "type": "timeseries",
+          "gridPos": {"x": 0, "y": 16, "w": 12, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "percentunit", "custom": {"drawStyle": "line", "fillOpacity": 20}}},
+          "targets": [{"expr": "sum by (namespace, pod) (rate(container_cpu_usage_seconds_total{container!=\"\",container!=\"POD\"}[5m]))", "legendFormat": "{{namespace}}/{{pod}}", "refId": "A"}]
+        },
+        {
+          "id": 6,
+          "title": "Ready Replicas by Deployment",
+          "type": "table",
+          "gridPos": {"x": 12, "y": 16, "w": 12, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}}},
+          "options": {"showHeader": true},
+          "targets": [{"expr": "kube_deployment_status_replicas_ready", "legendFormat": "{{namespace}}/{{deployment}}", "refId": "A", "format": "table", "instant": true}],
+          "transformations": [{"id": "organize", "options": {"excludeByName": {"Time": true, "__name__": true, "instance": true, "job": true}, "renameByName": {"Value": "Ready", "deployment": "Deployment", "namespace": "Namespace"}}}]
+        },
+        {
+          "id": 7,
+          "title": "OOMKilled Containers (Last 24h)",
+          "type": "stat",
+          "gridPos": {"x": 0, "y": 24, "w": 8, "h": 4},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}},
+          "options": {"colorMode": "value", "graphMode": "none", "justifyMode": "center"},
+          "targets": [{"expr": "sum(increase(kube_pod_container_status_last_terminated_reason{reason=\"OOMKilled\"}[24h])) or vector(0)", "legendFormat": "OOMKilled", "refId": "A"}]
+        },
+        {
+          "id": 8,
+          "title": "CrashLoopBackOff Pods",
+          "type": "stat",
+          "gridPos": {"x": 8, "y": 24, "w": 8, "h": 4},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}},
+          "options": {"colorMode": "value", "graphMode": "none", "justifyMode": "center"},
+          "targets": [{"expr": "sum(kube_pod_container_status_waiting_reason{reason=\"CrashLoopBackOff\"}) or vector(0)", "legendFormat": "CrashLoopBackOff", "refId": "A"}]
+        },
+        {
+          "id": 9,
+          "title": "Pending Pods",
+          "type": "stat",
+          "gridPos": {"x": 16, "y": 24, "w": 8, "h": 4},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 5}]}}},
+          "options": {"colorMode": "value", "graphMode": "none", "justifyMode": "center"},
+          "targets": [{"expr": "sum(kube_pod_status_phase{phase=\"Pending\"}) or vector(0)", "legendFormat": "Pending", "refId": "A"}]
         }
-      ],
-      "refresh": "10s",
+      ]
+    }
+  ingress-traffic-dashboard.json: |
+    {
+      "id": null,
+      "uid": "ingress-traffic",
+      "title": "Ingress & Traffic",
+      "tags": ["ingress", "traffic", "cloudflare"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "30s",
       "time": {"from": "now-1h", "to": "now"},
-      "schemaVersion": 39
+      "panels": [
+        {
+          "id": 1,
+          "title": "Cloudflare Tunnel Status",
+          "type": "stat",
+          "gridPos": {"x": 0, "y": 0, "w": 12, "h": 4},
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [{"type": "value", "options": {"1": {"text": "Connected", "color": "green"}, "0": {"text": "Disconnected", "color": "red"}}}],
+              "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
+            }
+          },
+          "options": {"colorMode": "background", "graphMode": "none", "justifyMode": "center"},
+          "targets": [{"expr": "up{job=\"cloudflared\"}", "legendFormat": "{{pod}}", "refId": "A"}]
+        },
+        {
+          "id": 2,
+          "title": "Tunnel Connections",
+          "type": "stat",
+          "gridPos": {"x": 12, "y": 0, "w": 12, "h": 4},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 1}, {"color": "green", "value": 2}]}}},
+          "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "center"},
+          "targets": [{"expr": "count(up{job=\"cloudflared\"} == 1)", "legendFormat": "Active Tunnels", "refId": "A"}]
+        },
+        {
+          "id": 3,
+          "title": "Probe Response Time by Service",
+          "type": "timeseries",
+          "gridPos": {"x": 0, "y": 4, "w": 24, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "s", "custom": {"drawStyle": "line", "fillOpacity": 10}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 3}]}}},
+          "targets": [{"expr": "max by (subdomain) (probe_duration_seconds{job=\"blackbox-subdomain-availability\"} and probe_success == 1)", "legendFormat": "{{subdomain}}", "refId": "A"}]
+        },
+        {
+          "id": 4,
+          "title": "Service Availability (24h)",
+          "type": "bargauge",
+          "gridPos": {"x": 0, "y": 12, "w": 12, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "percentunit", "min": 0, "max": 1, "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 0.95}, {"color": "green", "value": 0.99}]}}},
+          "options": {"orientation": "horizontal", "displayMode": "gradient", "showUnfilled": true},
+          "targets": [{"expr": "max by (subdomain) (avg_over_time(probe_success{job=\"blackbox-subdomain-availability\"}[24h]))", "legendFormat": "{{subdomain}}", "refId": "A"}]
+        },
+        {
+          "id": 5,
+          "title": "SSL Certificate Expiry",
+          "type": "bargauge",
+          "gridPos": {"x": 12, "y": 12, "w": 12, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "d", "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 14}, {"color": "green", "value": 30}]}}},
+          "options": {"orientation": "horizontal", "displayMode": "gradient", "showUnfilled": false},
+          "targets": [{"expr": "max by (subdomain) ((probe_ssl_earliest_cert_expiry{job=\"blackbox-subdomain-availability\"} - time()) / 86400)", "legendFormat": "{{subdomain}}", "refId": "A"}]
+        },
+        {
+          "id": 6,
+          "title": "Cloudflare Tunnel Logs",
+          "type": "logs",
+          "gridPos": {"x": 0, "y": 20, "w": 24, "h": 8},
+          "datasource": "Loki",
+          "targets": [{"expr": "{app=\"cloudflared\"}", "refId": "A"}],
+          "options": {"showTime": true, "showLabels": false, "showCommonLabels": false, "wrapLogMessage": true, "sortOrder": "Descending", "dedupStrategy": "none", "enableLogDetails": true}
+        }
+      ]
+    }
+  database-monitoring-dashboard.json: |
+    {
+      "id": null,
+      "uid": "database-monitoring",
+      "title": "Database Monitoring",
+      "tags": ["database", "postgresql", "mirai-db"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "30s",
+      "time": {"from": "now-1h", "to": "now"},
+      "panels": [
+        {
+          "id": 1,
+          "title": "Database Pod Status",
+          "type": "stat",
+          "gridPos": {"x": 0, "y": 0, "w": 8, "h": 4},
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [{"type": "range", "options": {"from": 1, "to": 999, "result": {"text": "Running", "color": "green"}}}, {"type": "value", "options": {"0": {"text": "Down", "color": "red"}}}],
+              "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
+            }
+          },
+          "options": {"colorMode": "background", "graphMode": "none", "justifyMode": "center"},
+          "targets": [{"expr": "sum(kube_pod_status_phase{namespace=\"mirai\",pod=~\"mirai-db.*\",phase=\"Running\"}) or vector(0)", "legendFormat": "mirai-db", "refId": "A"}]
+        },
+        {
+          "id": 2,
+          "title": "Database CPU Usage",
+          "type": "gauge",
+          "gridPos": {"x": 8, "y": 0, "w": 8, "h": 4},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "percentunit", "min": 0, "max": 1, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.7}, {"color": "red", "value": 0.9}]}}},
+          "targets": [{"expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"mirai\",pod=~\"mirai-db.*\",container!=\"\",container!=\"POD\"}[5m]))", "legendFormat": "CPU", "refId": "A"}]
+        },
+        {
+          "id": 3,
+          "title": "Database Memory Usage",
+          "type": "gauge",
+          "gridPos": {"x": 16, "y": 0, "w": 8, "h": 4},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "bytes", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1073741824}, {"color": "red", "value": 2147483648}]}}},
+          "targets": [{"expr": "sum(container_memory_working_set_bytes{namespace=\"mirai\",pod=~\"mirai-db.*\",container!=\"\",container!=\"POD\"})", "legendFormat": "Memory", "refId": "A"}]
+        },
+        {
+          "id": 4,
+          "title": "Database CPU Over Time",
+          "type": "timeseries",
+          "gridPos": {"x": 0, "y": 4, "w": 12, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "percentunit", "custom": {"drawStyle": "line", "fillOpacity": 20}}},
+          "targets": [{"expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"mirai\",pod=~\"mirai-db.*\",container!=\"\",container!=\"POD\"}[5m]))", "legendFormat": "mirai-db CPU", "refId": "A"}]
+        },
+        {
+          "id": 5,
+          "title": "Database Memory Over Time",
+          "type": "timeseries",
+          "gridPos": {"x": 12, "y": 4, "w": 12, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "bytes", "custom": {"drawStyle": "line", "fillOpacity": 20}}},
+          "targets": [{"expr": "sum(container_memory_working_set_bytes{namespace=\"mirai\",pod=~\"mirai-db.*\",container!=\"\",container!=\"POD\"})", "legendFormat": "mirai-db Memory", "refId": "A"}]
+        },
+        {
+          "id": 6,
+          "title": "Database Disk I/O",
+          "type": "timeseries",
+          "gridPos": {"x": 0, "y": 12, "w": 12, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "Bps", "custom": {"drawStyle": "line", "fillOpacity": 10}}},
+          "targets": [
+            {"expr": "sum(rate(container_fs_reads_bytes_total{namespace=\"mirai\",pod=~\"mirai-db.*\",container!=\"\",container!=\"POD\"}[5m]))", "legendFormat": "Read", "refId": "A"},
+            {"expr": "sum(rate(container_fs_writes_bytes_total{namespace=\"mirai\",pod=~\"mirai-db.*\",container!=\"\",container!=\"POD\"}[5m]))", "legendFormat": "Write", "refId": "B"}
+          ]
+        },
+        {
+          "id": 7,
+          "title": "Database Network I/O",
+          "type": "timeseries",
+          "gridPos": {"x": 12, "y": 12, "w": 12, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "Bps", "custom": {"drawStyle": "line", "fillOpacity": 10}}},
+          "targets": [
+            {"expr": "sum(rate(container_network_receive_bytes_total{namespace=\"mirai\",pod=~\"mirai-db.*\"}[5m]))", "legendFormat": "RX", "refId": "A"},
+            {"expr": "sum(rate(container_network_transmit_bytes_total{namespace=\"mirai\",pod=~\"mirai-db.*\"}[5m]))", "legendFormat": "TX", "refId": "B"}
+          ]
+        },
+        {
+          "id": 8,
+          "title": "Database Pod Restarts",
+          "type": "stat",
+          "gridPos": {"x": 0, "y": 20, "w": 12, "h": 4},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 3}]}}},
+          "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "center"},
+          "targets": [{"expr": "sum(kube_pod_container_status_restarts_total{namespace=\"mirai\",pod=~\"mirai-db.*\"})", "legendFormat": "Restarts", "refId": "A"}]
+        },
+        {
+          "id": 9,
+          "title": "Database Logs",
+          "type": "logs",
+          "gridPos": {"x": 0, "y": 24, "w": 24, "h": 8},
+          "datasource": "Loki",
+          "targets": [{"expr": "{namespace=\"mirai\",pod=~\"mirai-db.*\"}", "refId": "A"}],
+          "options": {"showTime": true, "showLabels": false, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true}
+        }
+      ]
+    }
+  alerts-overview-dashboard.json: |
+    {
+      "id": null,
+      "uid": "alerts-overview",
+      "title": "Alerts Overview",
+      "tags": ["alerts", "alertmanager"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "30s",
+      "time": {"from": "now-24h", "to": "now"},
+      "panels": [
+        {
+          "id": 1,
+          "title": "Active Alerts",
+          "type": "stat",
+          "gridPos": {"x": 0, "y": 0, "w": 8, "h": 4},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 5}]}}},
+          "options": {"colorMode": "value", "graphMode": "none", "justifyMode": "center"},
+          "targets": [{"expr": "sum(ALERTS{alertstate=\"firing\"}) or vector(0)", "legendFormat": "Firing", "refId": "A"}]
+        },
+        {
+          "id": 2,
+          "title": "Pending Alerts",
+          "type": "stat",
+          "gridPos": {"x": 8, "y": 0, "w": 8, "h": 4},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}]}}},
+          "options": {"colorMode": "value", "graphMode": "none", "justifyMode": "center"},
+          "targets": [{"expr": "sum(ALERTS{alertstate=\"pending\"}) or vector(0)", "legendFormat": "Pending", "refId": "A"}]
+        },
+        {
+          "id": 3,
+          "title": "Alertmanager Status",
+          "type": "stat",
+          "gridPos": {"x": 16, "y": 0, "w": 8, "h": 4},
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [{"type": "value", "options": {"1": {"text": "Up", "color": "green"}, "0": {"text": "Down", "color": "red"}}}],
+              "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
+            }
+          },
+          "options": {"colorMode": "background", "graphMode": "none", "justifyMode": "center"},
+          "targets": [{"expr": "up{job=\"alertmanager\"} or vector(1)", "legendFormat": "Alertmanager", "refId": "A"}]
+        },
+        {
+          "id": 4,
+          "title": "Firing Alerts by Severity",
+          "type": "piechart",
+          "gridPos": {"x": 0, "y": 4, "w": 12, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "short"}},
+          "options": {"legend": {"displayMode": "table", "placement": "right"}, "pieType": "pie"},
+          "targets": [{"expr": "sum by (severity) (ALERTS{alertstate=\"firing\"})", "legendFormat": "{{severity}}", "refId": "A"}]
+        },
+        {
+          "id": 5,
+          "title": "Alert History (24h)",
+          "type": "timeseries",
+          "gridPos": {"x": 12, "y": 4, "w": 12, "h": 8},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "short", "custom": {"drawStyle": "bars", "fillOpacity": 80}}},
+          "targets": [
+            {"expr": "sum(ALERTS{alertstate=\"firing\"})", "legendFormat": "Firing", "refId": "A"},
+            {"expr": "sum(ALERTS{alertstate=\"pending\"})", "legendFormat": "Pending", "refId": "B"}
+          ]
+        },
+        {
+          "id": 6,
+          "title": "Current Firing Alerts",
+          "type": "table",
+          "gridPos": {"x": 0, "y": 12, "w": 24, "h": 8},
+          "datasource": "Prometheus",
+          "targets": [{"expr": "ALERTS{alertstate=\"firing\"}", "refId": "A", "format": "table", "instant": true}],
+          "transformations": [{"id": "organize", "options": {"excludeByName": {"Time": true, "__name__": true, "Value": true}, "renameByName": {"alertname": "Alert", "alertstate": "State", "severity": "Severity", "component": "Component"}}}],
+          "options": {"showHeader": true}
+        },
+        {
+          "id": 7,
+          "title": "Alerts by Component",
+          "type": "bargauge",
+          "gridPos": {"x": 0, "y": 20, "w": 24, "h": 6},
+          "datasource": "Prometheus",
+          "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 3}]}}},
+          "options": {"orientation": "horizontal", "displayMode": "gradient", "showUnfilled": true},
+          "targets": [{"expr": "sum by (component) (ALERTS{alertstate=\"firing\"})", "legendFormat": "{{component}}", "refId": "A"}]
+        }
+      ]
+    }
+  logs-dashboard.json: |
+    {
+      "id": null,
+      "uid": "logs-dashboard",
+      "title": "Logs Dashboard",
+      "tags": ["logs", "loki"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "30s",
+      "time": {"from": "now-1h", "to": "now"},
+      "panels": [
+        {
+          "id": 1,
+          "title": "Error Logs (All Namespaces)",
+          "type": "logs",
+          "gridPos": {"x": 0, "y": 0, "w": 24, "h": 10},
+          "datasource": "Loki",
+          "targets": [{"expr": "{namespace=~\".+\"} |~ \"(?i)error|exception|fatal|panic|fail\"", "refId": "A"}],
+          "options": {"showTime": true, "showLabels": true, "showCommonLabels": false, "wrapLogMessage": true, "sortOrder": "Descending", "dedupStrategy": "none", "enableLogDetails": true}
+        },
+        {
+          "id": 2,
+          "title": "Mirai Backend Logs",
+          "type": "logs",
+          "gridPos": {"x": 0, "y": 10, "w": 12, "h": 10},
+          "datasource": "Loki",
+          "targets": [{"expr": "{namespace=\"mirai\",pod=~\"mirai-backend.*\"}", "refId": "A"}],
+          "options": {"showTime": true, "showLabels": false, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true}
+        },
+        {
+          "id": 3,
+          "title": "Mirai Frontend Logs",
+          "type": "logs",
+          "gridPos": {"x": 12, "y": 10, "w": 12, "h": 10},
+          "datasource": "Loki",
+          "targets": [{"expr": "{namespace=\"mirai\",pod=~\"mirai-frontend.*\"}", "refId": "A"}],
+          "options": {"showTime": true, "showLabels": false, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true}
+        },
+        {
+          "id": 4,
+          "title": "Kratos Auth Logs",
+          "type": "logs",
+          "gridPos": {"x": 0, "y": 20, "w": 12, "h": 10},
+          "datasource": "Loki",
+          "targets": [{"expr": "{namespace=\"kratos\"}", "refId": "A"}],
+          "options": {"showTime": true, "showLabels": false, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true}
+        },
+        {
+          "id": 5,
+          "title": "Ingress Logs (Cloudflared)",
+          "type": "logs",
+          "gridPos": {"x": 12, "y": 20, "w": 12, "h": 10},
+          "datasource": "Loki",
+          "targets": [{"expr": "{namespace=\"ingress\",app=\"cloudflared\"}", "refId": "A"}],
+          "options": {"showTime": true, "showLabels": false, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true}
+        },
+        {
+          "id": 6,
+          "title": "Log Volume by Namespace",
+          "type": "timeseries",
+          "gridPos": {"x": 0, "y": 30, "w": 24, "h": 6},
+          "datasource": "Loki",
+          "fieldConfig": {"defaults": {"unit": "short", "custom": {"drawStyle": "bars", "fillOpacity": 80, "stacking": {"mode": "normal"}}}},
+          "targets": [{"expr": "sum by (namespace) (count_over_time({namespace=~\".+\"}[5m]))", "legendFormat": "{{namespace}}", "refId": "A"}]
+        }
+      ]
     }
   cluster-resources-dashboard.json: |
     {
