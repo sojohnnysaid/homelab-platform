@@ -184,6 +184,10 @@ data:
       kubernetes_sd_configs:
       - role: pod
       relabel_configs:
+      # Only keep pods on this node
+      - source_labels: [__meta_kubernetes_pod_node_name]
+        action: keep
+        regex: ${HOSTNAME}
       # Collect logs from all application namespaces
       - source_labels: [__meta_kubernetes_namespace]
         action: keep
@@ -243,6 +247,12 @@ spec:
         image: grafana/promtail:2.9.3
         args:
         - -config.file=/etc/promtail/promtail.yaml
+        - -config.expand-env=true
+        env:
+        - name: HOSTNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
         ports:
         - containerPort: 9080
           name: http
