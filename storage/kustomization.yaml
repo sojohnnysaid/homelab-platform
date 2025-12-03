@@ -3,4 +3,5 @@ kind: Kustomization
 
 resources:
   - nfs-provisioner-deployment.yaml
+  - local-path-provisioner.yaml
   - pod-disruption-budgets.yaml

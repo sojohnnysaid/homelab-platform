@@ -1,0 +1,7 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  # CloudNativePG operator v1.24.1
+  # Downloaded from: https://github.com/cloudnative-pg/cloudnative-pg/releases
+  - cnpg-operator.yaml
