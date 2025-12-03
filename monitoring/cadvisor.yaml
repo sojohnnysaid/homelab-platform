@@ -26,10 +26,10 @@ spec:
         image: gcr.io/cadvisor/cadvisor:v0.49.1
         resources:
           requests:
-            memory: 200Mi
+            memory: 1Gi
             cpu: 100m
           limits:
-            memory: 400Mi
+            memory: 2Gi
             cpu: 400m
         volumeMounts:
         - name: rootfs
@@ -54,11 +54,12 @@ spec:
         args:
           - --containerd=/var/run/containerd/containerd.sock
           - --docker_only=false
-          - --disable_metrics=percpu,sched,tcp,udp,disk,diskIO,process
-          - --housekeeping_interval=10s
-          - --max_housekeeping_interval=15s
+          - --disable_metrics=percpu,sched,tcp,udp,disk,diskIO,process,referenced_memory,advtcp,cpu_topology,hugetlb,memory_numa,resctrl,oom_event
+          - --housekeeping_interval=30s
+          - --max_housekeeping_interval=60s
           - --event_storage_event_limit=default=0
           - --event_storage_age_limit=default=0
+          - --storage_duration=1m0s
         securityContext:
           privileged: true
       automountServiceAccountToken: false
