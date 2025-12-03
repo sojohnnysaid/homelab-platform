@@ -11,3 +11,51 @@ metadata:
     # Tenant identification
     tenant: mirai
     environment: production
+---
+# Resource limits for mirai namespace
+# Higher limits to support CNPG PostgreSQL cluster (3 replicas)
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: tenant-limits
+  namespace: mirai
+spec:
+  limits:
+  - type: Container
+    default:
+      cpu: 500m
+      memory: 512Mi
+    defaultRequest:
+      cpu: 100m
+      memory: 128Mi
+    max:
+      cpu: "10"
+      memory: 32Gi
+    min:
+      cpu: 10m
+      memory: 16Mi
+  - type: PersistentVolumeClaim
+    max:
+      storage: 100Gi
+    min:
+      storage: 1Gi
+---
+# Resource quota for mirai namespace
+# Higher quota to support CNPG PostgreSQL cluster (3 replicas)
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: tenant-quota
+  namespace: mirai
+spec:
+  hard:
+    requests.cpu: "16"
+    requests.memory: 48Gi
+    limits.cpu: "32"
+    limits.memory: 64Gi
+    persistentvolumeclaims: "20"
+    requests.storage: 200Gi
+    pods: "30"
+    services: "15"
+    secrets: "30"
+    configmaps: "30"
