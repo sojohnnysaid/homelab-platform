@@ -1079,6 +1079,116 @@ data:
         }
       ]
     }
+  ai-generation-jobs-dashboard.json: |
+    {
+      "id": null,
+      "uid": "ai-generation-jobs",
+      "title": "AI Generation Jobs",
+      "tags": ["mirai", "ai", "generation", "jobs"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "30s",
+      "time": {"from": "now-6h", "to": "now"},
+      "panels": [
+        {
+          "id": 1,
+          "title": "Generation Job Activity",
+          "type": "timeseries",
+          "gridPos": {"x": 0, "y": 0, "w": 24, "h": 8},
+          "datasource": "Loki",
+          "fieldConfig": {"defaults": {"unit": "short", "custom": {"drawStyle": "bars", "fillOpacity": 80, "stacking": {"mode": "normal"}}}},
+          "targets": [
+            {"expr": "sum by (level) (count_over_time({namespace=\"mirai\", app=\"backend\"} |~ \"generation|Generation|AI\" [5m]))", "legendFormat": "{{level}}", "refId": "A"}
+          ]
+        },
+        {
+          "id": 2,
+          "title": "Jobs Started",
+          "type": "stat",
+          "gridPos": {"x": 0, "y": 8, "w": 6, "h": 4},
+          "datasource": "Loki",
+          "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}]}}},
+          "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "center"},
+          "targets": [{"expr": "count_over_time({namespace=\"mirai\", app=\"backend\"} |~ \"job created|job claimed|processing AI generation\" [6h])", "refId": "A"}]
+        },
+        {
+          "id": 3,
+          "title": "Jobs Completed",
+          "type": "stat",
+          "gridPos": {"x": 6, "y": 8, "w": 6, "h": 4},
+          "datasource": "Loki",
+          "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}}},
+          "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "center"},
+          "targets": [{"expr": "count_over_time({namespace=\"mirai\", app=\"backend\"} |~ \"generation completed|job completed|AI generation job completed\" [6h])", "refId": "A"}]
+        },
+        {
+          "id": 4,
+          "title": "Jobs Failed",
+          "type": "stat",
+          "gridPos": {"x": 12, "y": 8, "w": 6, "h": 4},
+          "datasource": "Loki",
+          "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}},
+          "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "center"},
+          "targets": [{"expr": "count_over_time({namespace=\"mirai\", app=\"backend\"} |~ \"generation failed|job failed|AI generation failed\" [6h])", "refId": "A"}]
+        },
+        {
+          "id": 5,
+          "title": "Rate Limit Hits",
+          "type": "stat",
+          "gridPos": {"x": 18, "y": 8, "w": 6, "h": 4},
+          "datasource": "Loki",
+          "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 10}]}}},
+          "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "center"},
+          "targets": [{"expr": "count_over_time({namespace=\"mirai\", app=\"backend\"} |~ \"429|rate limit|RESOURCE_EXHAUSTED\" [6h])", "refId": "A"}]
+        },
+        {
+          "id": 6,
+          "title": "Outline Generation Logs",
+          "type": "logs",
+          "gridPos": {"x": 0, "y": 12, "w": 12, "h": 10},
+          "datasource": "Loki",
+          "targets": [{"expr": "{namespace=\"mirai\", app=\"backend\"} |~ \"(?i)outline.*generat|course outline\"", "refId": "A"}],
+          "options": {"showTime": true, "showLabels": false, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true}
+        },
+        {
+          "id": 7,
+          "title": "Lesson Generation Logs",
+          "type": "logs",
+          "gridPos": {"x": 12, "y": 12, "w": 12, "h": 10},
+          "datasource": "Loki",
+          "targets": [{"expr": "{namespace=\"mirai\", app=\"backend\"} |~ \"(?i)lesson.*generat|ProcessLessonGenerationJob\"", "refId": "A"}],
+          "options": {"showTime": true, "showLabels": false, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true}
+        },
+        {
+          "id": 8,
+          "title": "AI Generation Errors",
+          "type": "logs",
+          "gridPos": {"x": 0, "y": 22, "w": 24, "h": 8},
+          "datasource": "Loki",
+          "targets": [{"expr": "{namespace=\"mirai\", app=\"backend\"} |~ \"(?i)error|fail|429|RESOURCE_EXHAUSTED\" |~ \"(?i)generat|AI|gemini\"", "refId": "A"}],
+          "options": {"showTime": true, "showLabels": false, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true}
+        },
+        {
+          "id": 9,
+          "title": "Gemini API Calls",
+          "type": "timeseries",
+          "gridPos": {"x": 0, "y": 30, "w": 12, "h": 6},
+          "datasource": "Loki",
+          "fieldConfig": {"defaults": {"unit": "short", "custom": {"drawStyle": "bars", "fillOpacity": 60}}},
+          "targets": [{"expr": "count_over_time({namespace=\"mirai\", app=\"backend\"} |~ \"gemini|Gemini|GenerateCourseOutline|GenerateLessonContent\" [5m])", "legendFormat": "API Calls", "refId": "A"}]
+        },
+        {
+          "id": 10,
+          "title": "Token Usage (from logs)",
+          "type": "logs",
+          "gridPos": {"x": 12, "y": 30, "w": 12, "h": 6},
+          "datasource": "Loki",
+          "targets": [{"expr": "{namespace=\"mirai\", app=\"backend\"} |~ \"tokensUsed|tokens_used|TokensUsed\"", "refId": "A"}],
+          "options": {"showTime": true, "showLabels": false, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true}
+        }
+      ]
+    }
 ---
 apiVersion: apps/v1
 kind: Deployment
