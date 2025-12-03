@@ -1087,30 +1087,28 @@ data:
       "tags": ["mirai", "ai", "generation", "jobs"],
       "timezone": "browser",
       "schemaVersion": 39,
-      "version": 1,
-      "refresh": "30s",
+      "version": 2,
+      "refresh": "1m",
       "time": {"from": "now-6h", "to": "now"},
       "panels": [
         {
           "id": 1,
-          "title": "Generation Job Activity",
-          "type": "timeseries",
+          "title": "Backend Logs (Last Hour)",
+          "type": "logs",
           "gridPos": {"x": 0, "y": 0, "w": 24, "h": 8},
           "datasource": "Loki",
-          "fieldConfig": {"defaults": {"unit": "short", "custom": {"drawStyle": "bars", "fillOpacity": 80, "stacking": {"mode": "normal"}}}},
-          "targets": [
-            {"expr": "sum by (level) (count_over_time({namespace=\"mirai\", app=\"backend\"} |~ \"generation|Generation|AI\" [5m]))", "legendFormat": "{{level}}", "refId": "A"}
-          ]
+          "targets": [{"expr": "{app=\"mirai-backend\"} |~ \"(?i)generat|job|poll\"", "refId": "A"}],
+          "options": {"showTime": true, "showLabels": false, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true}
         },
         {
           "id": 2,
-          "title": "Jobs Started",
+          "title": "Jobs Processing",
           "type": "stat",
           "gridPos": {"x": 0, "y": 8, "w": 6, "h": 4},
           "datasource": "Loki",
           "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}]}}},
-          "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "center"},
-          "targets": [{"expr": "count_over_time({namespace=\"mirai\", app=\"backend\"} |~ \"job created|job claimed|processing AI generation\" [6h])", "refId": "A"}]
+          "options": {"colorMode": "value", "graphMode": "none", "justifyMode": "center", "reduceOptions": {"calcs": ["sum"]}},
+          "targets": [{"expr": "count_over_time({app=\"mirai-backend\"} |~ \"processing AI generation job\" [6h])", "refId": "A"}]
         },
         {
           "id": 3,
@@ -1119,8 +1117,8 @@ data:
           "gridPos": {"x": 6, "y": 8, "w": 6, "h": 4},
           "datasource": "Loki",
           "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}}},
-          "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "center"},
-          "targets": [{"expr": "count_over_time({namespace=\"mirai\", app=\"backend\"} |~ \"generation completed|job completed|AI generation job completed\" [6h])", "refId": "A"}]
+          "options": {"colorMode": "value", "graphMode": "none", "justifyMode": "center", "reduceOptions": {"calcs": ["sum"]}},
+          "targets": [{"expr": "count_over_time({app=\"mirai-backend\"} |~ \"outline generation completed|lesson generation completed\" [6h])", "refId": "A"}]
         },
         {
           "id": 4,
@@ -1129,62 +1127,62 @@ data:
           "gridPos": {"x": 12, "y": 8, "w": 6, "h": 4},
           "datasource": "Loki",
           "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}},
-          "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "center"},
-          "targets": [{"expr": "count_over_time({namespace=\"mirai\", app=\"backend\"} |~ \"generation failed|job failed|AI generation failed\" [6h])", "refId": "A"}]
+          "options": {"colorMode": "value", "graphMode": "none", "justifyMode": "center", "reduceOptions": {"calcs": ["sum"]}},
+          "targets": [{"expr": "count_over_time({app=\"mirai-backend\"} |~ \"marking as failed|job failed\" [6h])", "refId": "A"}]
         },
         {
           "id": 5,
-          "title": "Rate Limit Hits",
+          "title": "Rate Limits",
           "type": "stat",
           "gridPos": {"x": 18, "y": 8, "w": 6, "h": 4},
           "datasource": "Loki",
-          "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 10}]}}},
-          "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "center"},
-          "targets": [{"expr": "count_over_time({namespace=\"mirai\", app=\"backend\"} |~ \"429|rate limit|RESOURCE_EXHAUSTED\" [6h])", "refId": "A"}]
+          "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 5}]}}},
+          "options": {"colorMode": "value", "graphMode": "none", "justifyMode": "center", "reduceOptions": {"calcs": ["sum"]}},
+          "targets": [{"expr": "count_over_time({app=\"mirai-backend\"} |~ \"RESOURCE_EXHAUSTED|429\" [6h])", "refId": "A"}]
         },
         {
           "id": 6,
-          "title": "Outline Generation Logs",
+          "title": "Outline Generation",
           "type": "logs",
           "gridPos": {"x": 0, "y": 12, "w": 12, "h": 10},
           "datasource": "Loki",
-          "targets": [{"expr": "{namespace=\"mirai\", app=\"backend\"} |~ \"(?i)outline.*generat|course outline\"", "refId": "A"}],
+          "targets": [{"expr": "{app=\"mirai-backend\"} |~ \"(?i)outline\"", "refId": "A"}],
           "options": {"showTime": true, "showLabels": false, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true}
         },
         {
           "id": 7,
-          "title": "Lesson Generation Logs",
+          "title": "Lesson Generation",
           "type": "logs",
           "gridPos": {"x": 12, "y": 12, "w": 12, "h": 10},
           "datasource": "Loki",
-          "targets": [{"expr": "{namespace=\"mirai\", app=\"backend\"} |~ \"(?i)lesson.*generat|ProcessLessonGenerationJob\"", "refId": "A"}],
+          "targets": [{"expr": "{app=\"mirai-backend\"} |~ \"(?i)lesson\"", "refId": "A"}],
           "options": {"showTime": true, "showLabels": false, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true}
         },
         {
           "id": 8,
-          "title": "AI Generation Errors",
+          "title": "Errors",
           "type": "logs",
           "gridPos": {"x": 0, "y": 22, "w": 24, "h": 8},
           "datasource": "Loki",
-          "targets": [{"expr": "{namespace=\"mirai\", app=\"backend\"} |~ \"(?i)error|fail|429|RESOURCE_EXHAUSTED\" |~ \"(?i)generat|AI|gemini\"", "refId": "A"}],
+          "targets": [{"expr": "{app=\"mirai-backend\"} |= \"error\" |~ \"(?i)generat|job|gemini\"", "refId": "A"}],
           "options": {"showTime": true, "showLabels": false, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true}
         },
         {
           "id": 9,
-          "title": "Gemini API Calls",
-          "type": "timeseries",
+          "title": "Poll Handler Activity",
+          "type": "logs",
           "gridPos": {"x": 0, "y": 30, "w": 12, "h": 6},
           "datasource": "Loki",
-          "fieldConfig": {"defaults": {"unit": "short", "custom": {"drawStyle": "bars", "fillOpacity": 60}}},
-          "targets": [{"expr": "count_over_time({namespace=\"mirai\", app=\"backend\"} |~ \"gemini|Gemini|GenerateCourseOutline|GenerateLessonContent\" [5m])", "legendFormat": "API Calls", "refId": "A"}]
+          "targets": [{"expr": "{app=\"mirai-backend\"} |~ \"poll task|queued generation\"", "refId": "A"}],
+          "options": {"showTime": true, "showLabels": false, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true}
         },
         {
           "id": 10,
-          "title": "Token Usage (from logs)",
+          "title": "Token Usage",
           "type": "logs",
           "gridPos": {"x": 12, "y": 30, "w": 12, "h": 6},
           "datasource": "Loki",
-          "targets": [{"expr": "{namespace=\"mirai\", app=\"backend\"} |~ \"tokensUsed|tokens_used|TokensUsed\"", "refId": "A"}],
+          "targets": [{"expr": "{app=\"mirai-backend\"} |~ \"tokensUsed\"", "refId": "A"}],
           "options": {"showTime": true, "showLabels": false, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true}
         }
       ]
