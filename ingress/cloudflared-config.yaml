@@ -64,6 +64,12 @@ data:
           noHappyEyeballs: true
           keepAliveConnections: 50
           keepAliveTimeout: 25s
+      # Asynqmon Task Queue UI
+      - hostname: asynq.sogos.io
+        service: http://asynqmon.redis.svc.cluster.local:80
+        originRequest:
+          connectTimeout: 10s
+          keepAliveTimeout: 25s
       # Mailpit Email Testing (dev only)
       - hostname: mailpit.sogos.io
         service: http://mailpit.default.svc.cluster.local:8025
