@@ -87,6 +87,12 @@ data:
         originRequest:
           connectTimeout: 10s
           keepAliveTimeout: 25s
+      # Hubble Network Observability UI
+      - hostname: hubble.sogos.io
+        service: http://hubble-ui.kube-system.svc.cluster.local:80
+        originRequest:
+          connectTimeout: 10s
+          keepAliveTimeout: 25s
       - hostname: hello.sogos.io
         service: http://hello-world.static-sites.svc.cluster.local:80
         originRequest:
