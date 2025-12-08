@@ -55,6 +55,12 @@ data:
           noHappyEyeballs: true
           keepAliveConnections: 50
           keepAliveTimeout: 25s
+      # MinIO Object Storage (presigned URLs for images/exports)
+      - hostname: minio.sogos.io
+        service: http://minio-proxy.mirai.svc.cluster.local:9768
+        originRequest:
+          connectTimeout: 30s
+          keepAliveTimeout: 25s
       # Ory Kratos Authentication
       - hostname: mirai-auth.sogos.io
         service: http://kratos-public.kratos.svc.cluster.local:80
