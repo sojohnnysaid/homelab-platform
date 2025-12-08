@@ -41,6 +41,27 @@ spec:
       securityContext:
         seccompProfile:
           type: RuntimeDefault
+      # MSS Clamping for WAN compatibility
+      # Cluster has Jumbo Frames (MTU 9000) + WireGuard overhead (~60 bytes)
+      # Clamp TCP MSS to 1360 to ensure packets fit within internet MTU (1500)
+      # This keeps interface MTU at 9000 for internal traffic while clamping
+      # only the TCP MSS for external tunnel connections
+      initContainers:
+      - name: mss-clamp
+        image: alpine:3.19
+        command:
+        - /bin/sh
+        - -c
+        - |
+          apk add --no-cache iptables
+          echo "Adding MSS clamp rule (1360 bytes for WireGuard + WAN compatibility)..."
+          iptables -t mangle -A POSTROUTING -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1360
+          echo "MSS clamping enabled:"
+          iptables -t mangle -L POSTROUTING -v -n
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
       containers:
       - name: cloudflared
         image: cloudflare/cloudflared:2025.11.1
