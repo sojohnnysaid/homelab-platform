@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: kube-system
+
+resources:
+  - cilium-manifests.yaml
+
+# Cilium v1.18.4 with:
+# - eBPF kube-proxy replacement
+# - Hubble observability (UI + Relay)
+# - WireGuard encryption
+# - Native routing mode
+#
+# Regenerate manifests after values.yaml changes:
+#   helm template cilium cilium/cilium \
+#     --version 1.18.4 \
+#     --namespace kube-system \
+#     --values values.yaml \
+#     > cilium-manifests.yaml
