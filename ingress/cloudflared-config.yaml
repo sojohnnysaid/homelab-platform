@@ -55,6 +55,12 @@ data:
           noHappyEyeballs: true
           keepAliveConnections: 50
           keepAliveTimeout: 25s
+      # Mirai Architecture Diagrams
+      - hostname: diagram.sogos.io
+        service: http://diagram.static-sites.svc.cluster.local:80
+        originRequest:
+          connectTimeout: 10s
+          keepAliveTimeout: 25s
       # MinIO Object Storage (presigned URLs for images/exports)
       - hostname: minio.sogos.io
         service: http://minio-proxy.mirai.svc.cluster.local:9768
