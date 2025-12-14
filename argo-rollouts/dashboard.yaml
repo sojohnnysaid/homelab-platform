@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: argo-rollouts-dashboard
+  namespace: argo-rollouts
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: argo-rollouts-dashboard
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: argo-rollouts-aggregate-to-view
+subjects:
+- kind: ServiceAccount
+  name: argo-rollouts-dashboard
+  namespace: argo-rollouts
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argo-rollouts-dashboard
+  namespace: argo-rollouts
+  labels:
+    app: argo-rollouts-dashboard
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: argo-rollouts-dashboard
+  template:
+    metadata:
+      labels:
+        app: argo-rollouts-dashboard
+    spec:
+      serviceAccountName: argo-rollouts-dashboard
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      containers:
+      - name: dashboard
+        image: quay.io/argoproj/argo-rollouts:v1.7.2
+        args:
+        - dashboard
+        - --port=3100
+        ports:
+        - containerPort: 3100
+          name: http
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: argo-rollouts-dashboard
+  namespace: argo-rollouts
+  labels:
+    app: argo-rollouts-dashboard
+spec:
+  selector:
+    app: argo-rollouts-dashboard
+  ports:
+  - port: 80
+    targetPort: 3100
+    name: http

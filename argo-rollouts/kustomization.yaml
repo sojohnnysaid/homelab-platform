@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: argo-rollouts
+
+resources:
+- namespace.yaml
+# Official Argo Rollouts install manifest (v1.7.2)
+- https://github.com/argoproj/argo-rollouts/releases/download/v1.7.2/install.yaml
+- dashboard.yaml
+
+# Add tolerations for control-plane nodes
+patches:
+- patch: |-
+    - op: add
+      path: /spec/template/spec/tolerations
+      value:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+  target:
+    kind: Deployment
+    name: argo-rollouts

@@ -119,6 +119,12 @@ data:
         originRequest:
           connectTimeout: 10s
           keepAliveTimeout: 25s
+      # Argo Rollouts Dashboard (protected by Cloudflare Access)
+      - hostname: rollouts.sogos.io
+        service: http://argo-rollouts-dashboard.argo-rollouts.svc.cluster.local:80
+        originRequest:
+          connectTimeout: 10s
+          keepAliveTimeout: 25s
       - hostname: grafana.sogos.io
         service: http://grafana.monitoring.svc.cluster.local:3000
         originRequest:
