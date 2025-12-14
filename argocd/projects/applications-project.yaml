@@ -7,6 +7,7 @@ spec:
   description: User-facing applications
   sourceRepos:
     - 'https://github.com/sojohnnysaid/mirai-app.git'
+    - 'https://github.com/Sogos-LLC/mirai-app.git'
     - 'https://github.com/sojohnnysaid/static-sites.git'
     - 'https://github.com/sojohnnysaid/sogos-marketing.git'
   destinations:
