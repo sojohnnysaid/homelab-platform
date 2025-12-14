@@ -30,9 +30,9 @@ spec:
       allowEmpty: false
     syncOptions:
       - CreateNamespace=true
-      - ServerSideApply=true
       - ApplyOutOfSyncOnly=true
       - RespectIgnoreDifferences=true
+      - PruneLast=true
     retry:
       limit: 5
       backoff:
