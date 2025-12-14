@@ -5,9 +5,8 @@ namespace: argo-rollouts
 
 resources:
 - namespace.yaml
-# Official Argo Rollouts install manifest (v1.7.2)
-- https://github.com/argoproj/argo-rollouts/releases/download/v1.7.2/install.yaml
-# Note: Using ArgoCD extension instead of standalone dashboard
+# Official Argo Rollouts install manifest (v1.7.2) - downloaded locally for faster sync
+- install.yaml
 
 # Add tolerations for control-plane nodes
 patches:
