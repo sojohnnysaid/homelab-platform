@@ -12,6 +12,8 @@ spec:
   destinations:
     - namespace: mirai
       server: https://kubernetes.default.svc
+    - namespace: mirai-uat
+      server: https://kubernetes.default.svc
     - namespace: redis
       server: https://kubernetes.default.svc
     - namespace: static-sites
