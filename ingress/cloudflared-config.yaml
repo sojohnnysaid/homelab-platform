@@ -159,4 +159,10 @@ data:
         originRequest:
           connectTimeout: 10s
           keepAliveTimeout: 25s
+      # IPTV Live TV App
+      - hostname: tv.sogos.io
+        service: http://iptv-app.iptv.svc.cluster.local:80
+        originRequest:
+          connectTimeout: 10s
+          keepAliveTimeout: 25s
       - service: http_status:404
