@@ -50,11 +50,12 @@ data:
       - hostname: mirai-api.sogos.io
         service: http://mirai-backend.mirai.svc.cluster.local:8080
         originRequest:
-          connectTimeout: 10s
+          connectTimeout: 120s
           tlsTimeout: 10s
           noHappyEyeballs: true
           keepAliveConnections: 50
           keepAliveTimeout: 25s
+          # Increased connectTimeout for long-running sync operations (file upload/processing)
       # Mirai UAT Environment
       - hostname: mirai-uat.sogos.io
         service: http://mirai-frontend.mirai-uat.svc.cluster.local:80
@@ -75,11 +76,12 @@ data:
       - hostname: mirai-api-uat.sogos.io
         service: http://mirai-backend.mirai-uat.svc.cluster.local:8080
         originRequest:
-          connectTimeout: 10s
+          connectTimeout: 120s
           tlsTimeout: 10s
           noHappyEyeballs: true
           keepAliveConnections: 50
           keepAliveTimeout: 25s
+          # Increased connectTimeout for long-running sync operations (file upload/processing)
       - hostname: mirai-auth-uat.sogos.io
         service: http://kratos-public.kratos-uat.svc.cluster.local:80
         originRequest:
