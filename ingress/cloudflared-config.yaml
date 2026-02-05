@@ -17,13 +17,14 @@ data:
     grace-period: 30s
     # Global origin request settings for reliability
     # CRITICAL: keepAliveTimeout must be < kube-proxy's 30s idle timeout to avoid stale connections
+    # keepAliveConnections: 2 per cloudflared replica × 6 replicas = 12 connections per backend (plenty for homelab)
     originRequest:
       connectTimeout: 10s
       tlsTimeout: 10s
       noHappyEyeballs: true
       tcpKeepAlive: 15s
-      keepAliveConnections: 50
-      keepAliveTimeout: 25s
+      keepAliveConnections: 2
+      keepAliveTimeout: 20s
     ingress:
       # Health endpoint for network round-trip testing
       - hostname: health.sogos.io
@@ -37,25 +38,24 @@ data:
           connectTimeout: 10s
           tlsTimeout: 10s
           noHappyEyeballs: true
-          keepAliveConnections: 50
-          keepAliveTimeout: 25s
+          keepAliveConnections: 2
+          keepAliveTimeout: 20s
       - hostname: get-mirai.sogos.io
         service: http://mirai-marketing.mirai.svc.cluster.local:80
         originRequest:
           connectTimeout: 10s
           tlsTimeout: 10s
           noHappyEyeballs: true
-          keepAliveConnections: 50
-          keepAliveTimeout: 25s
+          keepAliveConnections: 2
+          keepAliveTimeout: 20s
       - hostname: mirai-api.sogos.io
         service: http://mirai-backend.mirai.svc.cluster.local:8080
         originRequest:
-          connectTimeout: 120s
+          connectTimeout: 10s
           tlsTimeout: 10s
           noHappyEyeballs: true
-          keepAliveConnections: 50
-          keepAliveTimeout: 25s
-          # Increased connectTimeout for long-running sync operations (file upload/processing)
+          keepAliveConnections: 2
+          keepAliveTimeout: 20s
       # Mirai UAT Environment
       - hostname: mirai-uat.sogos.io
         service: http://mirai-frontend.mirai-uat.svc.cluster.local:80
@@ -63,45 +63,44 @@ data:
           connectTimeout: 10s
           tlsTimeout: 10s
           noHappyEyeballs: true
-          keepAliveConnections: 50
-          keepAliveTimeout: 25s
+          keepAliveConnections: 2
+          keepAliveTimeout: 20s
       - hostname: get-mirai-uat.sogos.io
         service: http://mirai-marketing.mirai-uat.svc.cluster.local:80
         originRequest:
           connectTimeout: 10s
           tlsTimeout: 10s
           noHappyEyeballs: true
-          keepAliveConnections: 50
-          keepAliveTimeout: 25s
+          keepAliveConnections: 2
+          keepAliveTimeout: 20s
       - hostname: mirai-api-uat.sogos.io
         service: http://mirai-backend.mirai-uat.svc.cluster.local:8080
         originRequest:
-          connectTimeout: 120s
+          connectTimeout: 10s
           tlsTimeout: 10s
           noHappyEyeballs: true
-          keepAliveConnections: 50
-          keepAliveTimeout: 25s
-          # Increased connectTimeout for long-running sync operations (file upload/processing)
+          keepAliveConnections: 2
+          keepAliveTimeout: 20s
       - hostname: mirai-auth-uat.sogos.io
         service: http://kratos-public.kratos-uat.svc.cluster.local:80
         originRequest:
           connectTimeout: 10s
           tlsTimeout: 10s
           noHappyEyeballs: true
-          keepAliveConnections: 50
-          keepAliveTimeout: 25s
+          keepAliveConnections: 2
+          keepAliveTimeout: 20s
       # Mirai Architecture Diagrams
       - hostname: diagram.sogos.io
         service: http://diagram.static-sites.svc.cluster.local:80
         originRequest:
           connectTimeout: 10s
-          keepAliveTimeout: 25s
+          keepAliveTimeout: 20s
       # MinIO Object Storage (presigned URLs for images/exports)
       - hostname: minio.sogos.io
         service: http://minio-proxy.mirai.svc.cluster.local:9768
         originRequest:
           connectTimeout: 30s
-          keepAliveTimeout: 25s
+          keepAliveTimeout: 20s
       # Ory Kratos Authentication
       - hostname: mirai-auth.sogos.io
         service: http://kratos-public.kratos.svc.cluster.local:80
@@ -109,62 +108,62 @@ data:
           connectTimeout: 10s
           tlsTimeout: 10s
           noHappyEyeballs: true
-          keepAliveConnections: 50
-          keepAliveTimeout: 25s
+          keepAliveConnections: 2
+          keepAliveTimeout: 20s
       # Asynqmon Task Queue UI
       - hostname: asynq.sogos.io
         service: http://asynqmon.redis.svc.cluster.local:80
         originRequest:
           connectTimeout: 10s
-          keepAliveTimeout: 25s
+          keepAliveTimeout: 20s
       # Mailpit Email Testing (dev only)
       - hostname: mailpit.sogos.io
         service: http://mailpit.default.svc.cluster.local:8025
         originRequest:
           connectTimeout: 10s
-          keepAliveTimeout: 25s
+          keepAliveTimeout: 20s
       # Other services
       - hostname: argocd.sogos.io
         service: http://argocd-server.argocd.svc.cluster.local:80
         originRequest:
           connectTimeout: 10s
-          keepAliveTimeout: 25s
+          keepAliveTimeout: 20s
       - hostname: grafana.sogos.io
         service: http://grafana.monitoring.svc.cluster.local:3000
         originRequest:
           connectTimeout: 10s
-          keepAliveTimeout: 25s
+          keepAliveTimeout: 20s
       # Hubble Network Observability UI
       - hostname: hubble.sogos.io
         service: http://hubble-ui.kube-system.svc.cluster.local:80
         originRequest:
           connectTimeout: 10s
-          keepAliveTimeout: 25s
+          keepAliveTimeout: 20s
       - hostname: hello.sogos.io
         service: http://hello-world.static-sites.svc.cluster.local:80
         originRequest:
           connectTimeout: 10s
-          keepAliveTimeout: 25s
+          keepAliveTimeout: 20s
       - hostname: solutions.sogos.io
         service: http://solutions.static-sites.svc.cluster.local:80
         originRequest:
           connectTimeout: 10s
-          keepAliveTimeout: 25s
+          keepAliveTimeout: 20s
       - hostname: product.sogos.io
         service: http://product.static-sites.svc.cluster.local:80
         originRequest:
           connectTimeout: 10s
-          keepAliveTimeout: 25s
+          keepAliveTimeout: 20s
       # Sogos Marketing (root domain)
       - hostname: sogos.io
         service: http://sogos-frontend.sogos-marketing.svc.cluster.local:80
         originRequest:
           connectTimeout: 10s
-          keepAliveTimeout: 25s
+          keepAliveTimeout: 20s
       # IPTV Live TV App
       - hostname: tv.sogos.io
         service: http://iptv-app.iptv.svc.cluster.local:80
         originRequest:
           connectTimeout: 10s
-          keepAliveTimeout: 25s
+          keepAliveTimeout: 20s
       - service: http_status:404
