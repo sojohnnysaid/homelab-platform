@@ -175,3 +175,73 @@ spec:
         duration: 5s
         factor: 2
         maxDuration: 3m
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mirai-uat-temporal
+  namespace: argocd
+  labels:
+    environment: uat
+    app.kubernetes.io/part-of: mirai-uat
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: applications
+  source:
+    repoURL: https://github.com/Sogos-LLC/mirai-app.git
+    targetRevision: uat
+    path: k8s-uat/temporal
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mirai-uat
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mirai-uat-ai
+  namespace: argocd
+  labels:
+    environment: uat
+    app.kubernetes.io/part-of: mirai-uat
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: applications
+  source:
+    repoURL: https://github.com/Sogos-LLC/mirai-app.git
+    targetRevision: uat
+    path: k8s-uat/ai
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mirai-uat
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
