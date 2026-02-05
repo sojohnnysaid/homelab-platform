@@ -30,15 +30,12 @@ ipam:
       - "10.244.0.0/16"
 
 # ============================================================================
-# SECURITY - WIREGUARD ENCRYPTION
+# SECURITY
 # ============================================================================
 
+# WireGuard encryption disabled - external access secured via Cloudflare Tunnel
 encryption:
-  enabled: true
-  type: wireguard
-  wireguard:
-    # Use userspace WireGuard if kernel module unavailable
-    userspaceFallback: true
+  enabled: false
 
 # ============================================================================
 # OBSERVABILITY - HUBBLE

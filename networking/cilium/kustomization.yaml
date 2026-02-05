@@ -9,7 +9,6 @@ resources:
 # Cilium v1.18.4 with:
 # - eBPF kube-proxy replacement
 # - Hubble observability (UI + Relay)
-# - WireGuard encryption
 # - Native routing mode
 #
 # Regenerate manifests after values.yaml changes:

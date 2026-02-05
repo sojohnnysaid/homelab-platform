@@ -201,8 +201,6 @@ data:
   enable-tcx: "true"
   datapath-mode: "veth"
   enable-masquerade-to-route-source: "false"
-  enable-wireguard: "true"
-  wireguard-persistent-keepalive: "0s"
 
   enable-xt-socket-fallback: "true"
   install-no-conntrack-iptables-rules: "false"
