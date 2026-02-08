@@ -1,5 +1,5 @@
 # Mirai Dev Environment ArgoCD Applications
-# These applications track the 'dev' branch and deploy to mirai-local-dev namespace
+# These applications track the 'dev' branch and deploy to mirai-loc-dev namespace
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -8,7 +8,7 @@ metadata:
   namespace: argocd
   labels:
     environment: dev
-    app.kubernetes.io/part-of: mirai-local-dev
+    app.kubernetes.io/part-of: mirai-loc-dev
   annotations:
     argocd.argoproj.io/sync-wave: "0"
   finalizers:
@@ -21,7 +21,7 @@ spec:
     path: k8s-local-dev/frontend
   destination:
     server: https://kubernetes.default.svc
-    namespace: mirai-local-dev
+    namespace: mirai-loc-dev
   syncPolicy:
     automated:
       prune: true
@@ -43,7 +43,7 @@ metadata:
   namespace: argocd
   labels:
     environment: dev
-    app.kubernetes.io/part-of: mirai-local-dev
+    app.kubernetes.io/part-of: mirai-loc-dev
   annotations:
     argocd.argoproj.io/sync-wave: "0"
   finalizers:
@@ -56,7 +56,7 @@ spec:
     path: k8s-local-dev/backend
   destination:
     server: https://kubernetes.default.svc
-    namespace: mirai-local-dev
+    namespace: mirai-loc-dev
   syncPolicy:
     automated:
       prune: true
@@ -78,7 +78,7 @@ metadata:
   namespace: argocd
   labels:
     environment: dev
-    app.kubernetes.io/part-of: mirai-local-dev
+    app.kubernetes.io/part-of: mirai-loc-dev
   annotations:
     argocd.argoproj.io/sync-wave: "0"
   finalizers:
@@ -91,7 +91,7 @@ spec:
     path: k8s-local-dev/frontend-marketing
   destination:
     server: https://kubernetes.default.svc
-    namespace: mirai-local-dev
+    namespace: mirai-loc-dev
   syncPolicy:
     automated:
       prune: true
@@ -113,7 +113,7 @@ metadata:
   namespace: argocd
   labels:
     environment: dev
-    app.kubernetes.io/part-of: mirai-local-dev
+    app.kubernetes.io/part-of: mirai-loc-dev
   annotations:
     argocd.argoproj.io/sync-wave: "-1"
   finalizers:
@@ -126,7 +126,7 @@ spec:
     path: k8s-local-dev/qdrant
   destination:
     server: https://kubernetes.default.svc
-    namespace: mirai-local-dev
+    namespace: mirai-loc-dev
   syncPolicy:
     automated:
       prune: true
@@ -148,7 +148,7 @@ metadata:
   namespace: argocd
   labels:
     environment: dev
-    app.kubernetes.io/part-of: mirai-local-dev
+    app.kubernetes.io/part-of: mirai-loc-dev
   annotations:
     argocd.argoproj.io/sync-wave: "-1"
   finalizers:
@@ -161,7 +161,7 @@ spec:
     path: k8s-local-dev/temporal
   destination:
     server: https://kubernetes.default.svc
-    namespace: mirai-local-dev
+    namespace: mirai-loc-dev
   syncPolicy:
     automated:
       prune: true
@@ -183,7 +183,7 @@ metadata:
   namespace: argocd
   labels:
     environment: dev
-    app.kubernetes.io/part-of: mirai-local-dev
+    app.kubernetes.io/part-of: mirai-loc-dev
   annotations:
     argocd.argoproj.io/sync-wave: "0"
   finalizers:
@@ -196,7 +196,7 @@ spec:
     path: k8s-local-dev/ai
   destination:
     server: https://kubernetes.default.svc
-    namespace: mirai-local-dev
+    namespace: mirai-loc-dev
   syncPolicy:
     automated:
       prune: true
