@@ -1,0 +1,212 @@
+# Mirai Dev Environment ArgoCD Applications
+# These applications track the 'dev' branch and deploy to mirai-local-dev namespace
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mirai-dev-frontend
+  namespace: argocd
+  labels:
+    environment: dev
+    app.kubernetes.io/part-of: mirai-local-dev
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: applications
+  source:
+    repoURL: https://github.com/Sogos-LLC/mirai-app.git
+    targetRevision: dev
+    path: k8s-local-dev/frontend
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mirai-local-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mirai-dev-backend
+  namespace: argocd
+  labels:
+    environment: dev
+    app.kubernetes.io/part-of: mirai-local-dev
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: applications
+  source:
+    repoURL: https://github.com/Sogos-LLC/mirai-app.git
+    targetRevision: dev
+    path: k8s-local-dev/backend
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mirai-local-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mirai-dev-marketing
+  namespace: argocd
+  labels:
+    environment: dev
+    app.kubernetes.io/part-of: mirai-local-dev
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: applications
+  source:
+    repoURL: https://github.com/Sogos-LLC/mirai-app.git
+    targetRevision: dev
+    path: k8s-local-dev/frontend-marketing
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mirai-local-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mirai-dev-qdrant
+  namespace: argocd
+  labels:
+    environment: dev
+    app.kubernetes.io/part-of: mirai-local-dev
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: applications
+  source:
+    repoURL: https://github.com/Sogos-LLC/mirai-app.git
+    targetRevision: dev
+    path: k8s-local-dev/qdrant
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mirai-local-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mirai-dev-temporal
+  namespace: argocd
+  labels:
+    environment: dev
+    app.kubernetes.io/part-of: mirai-local-dev
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: applications
+  source:
+    repoURL: https://github.com/Sogos-LLC/mirai-app.git
+    targetRevision: dev
+    path: k8s-local-dev/temporal
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mirai-local-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mirai-dev-ai
+  namespace: argocd
+  labels:
+    environment: dev
+    app.kubernetes.io/part-of: mirai-local-dev
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: applications
+  source:
+    repoURL: https://github.com/Sogos-LLC/mirai-app.git
+    targetRevision: dev
+    path: k8s-local-dev/ai
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mirai-local-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

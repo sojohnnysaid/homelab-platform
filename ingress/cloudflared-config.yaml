@@ -89,6 +89,39 @@ data:
           noHappyEyeballs: true
           keepAliveConnections: 2
           keepAliveTimeout: 20s
+      # Mirai Dev Environment
+      - hostname: mirai-dev.sogos.io
+        service: http://mirai-frontend.mirai-local-dev.svc.cluster.local:80
+        originRequest:
+          connectTimeout: 10s
+          tlsTimeout: 10s
+          noHappyEyeballs: true
+          keepAliveConnections: 2
+          keepAliveTimeout: 20s
+      - hostname: get-mirai-dev.sogos.io
+        service: http://mirai-marketing.mirai-local-dev.svc.cluster.local:80
+        originRequest:
+          connectTimeout: 10s
+          tlsTimeout: 10s
+          noHappyEyeballs: true
+          keepAliveConnections: 2
+          keepAliveTimeout: 20s
+      - hostname: mirai-api-dev.sogos.io
+        service: http://mirai-backend.mirai-local-dev.svc.cluster.local:8080
+        originRequest:
+          connectTimeout: 10s
+          tlsTimeout: 10s
+          noHappyEyeballs: true
+          keepAliveConnections: 2
+          keepAliveTimeout: 20s
+      - hostname: mirai-auth-dev.sogos.io
+        service: http://kratos-public.kratos-local-dev.svc.cluster.local:80
+        originRequest:
+          connectTimeout: 10s
+          tlsTimeout: 10s
+          noHappyEyeballs: true
+          keepAliveConnections: 2
+          keepAliveTimeout: 20s
       # Mirai Architecture Diagrams
       - hostname: diagram.sogos.io
         service: http://diagram.static-sites.svc.cluster.local:80

@@ -22,6 +22,12 @@ spec:
       server: https://kubernetes.default.svc
     - namespace: kratos-uat
       server: https://kubernetes.default.svc
+    - namespace: mirai-local-dev
+      server: https://kubernetes.default.svc
+    - namespace: kratos-local-dev
+      server: https://kubernetes.default.svc
+    - namespace: redis-local-dev
+      server: https://kubernetes.default.svc
     - namespace: static-sites
       server: https://kubernetes.default.svc
     - namespace: default
