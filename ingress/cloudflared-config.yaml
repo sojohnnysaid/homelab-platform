@@ -128,6 +128,12 @@ data:
         originRequest:
           connectTimeout: 10s
           keepAliveTimeout: 20s
+      # Kalshi BTC Mission Control
+      - hostname: kalshi-btc.sogos.io
+        service: http://kalshi-btc.static-sites.svc.cluster.local:80
+        originRequest:
+          connectTimeout: 10s
+          keepAliveTimeout: 20s
       # MinIO Object Storage (presigned URLs for images/exports)
       - hostname: minio.sogos.io
         service: http://minio-proxy.mirai.svc.cluster.local:9768
