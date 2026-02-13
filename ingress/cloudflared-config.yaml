@@ -134,6 +134,12 @@ data:
         originRequest:
           connectTimeout: 10s
           keepAliveTimeout: 20s
+      # Kalshi Bot Grafana Dashboard
+      - hostname: kalshi-bot-dashboard.sogos.io
+        service: http://grafana-hft.hft-loc-dev.svc.cluster.local:3000
+        originRequest:
+          connectTimeout: 10s
+          keepAliveTimeout: 20s
       # MinIO Object Storage (presigned URLs for images/exports)
       - hostname: minio.sogos.io
         service: http://minio-proxy.mirai.svc.cluster.local:9768
