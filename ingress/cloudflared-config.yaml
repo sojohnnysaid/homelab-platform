@@ -235,6 +235,12 @@ data:
         originRequest:
           connectTimeout: 10s
           keepAliveTimeout: 20s
+      # Custom Site
+      - hostname: custom-site.sogos.io
+        service: http://custom-site.static-sites.svc.cluster.local:80
+        originRequest:
+          connectTimeout: 10s
+          keepAliveTimeout: 20s
       # IPTV Live TV App
       - hostname: tv.sogos.io
         service: http://iptv-app.iptv.svc.cluster.local:80
