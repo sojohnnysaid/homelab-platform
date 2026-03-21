@@ -16,3 +16,4 @@ credentials.json
 *.swp
 *.swo
 *~
+plane/values.yaml
