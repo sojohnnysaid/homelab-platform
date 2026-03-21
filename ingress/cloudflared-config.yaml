@@ -140,6 +140,12 @@ data:
         originRequest:
           connectTimeout: 10s
           keepAliveTimeout: 20s
+      # Test2 Site
+      - hostname: test2.sogos.io
+        service: http://test2.static-sites.svc.cluster.local:80
+        originRequest:
+          connectTimeout: 10s
+          keepAliveTimeout: 20s
       # Gardening Plant Wizard
       - hostname: gardening.sogos.io
         service: http://gardening.static-sites.svc.cluster.local:80
