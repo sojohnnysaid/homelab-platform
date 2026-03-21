@@ -11,6 +11,7 @@ spec:
     - 'https://github.com/sojohnnysaid/static-sites.git'
     - 'https://github.com/sojohnnysaid/sogos-marketing.git'
     - 'https://github.com/sojohnnysaid/IPTV-app.git'
+    - 'https://github.com/sojohnnysaid/claude-assistant.git'
   destinations:
     - namespace: mirai
       server: https://kubernetes.default.svc
@@ -35,6 +36,8 @@ spec:
     - namespace: sogos-marketing
       server: https://kubernetes.default.svc
     - namespace: iptv
+      server: https://kubernetes.default.svc
+    - namespace: claude-assistant
       server: https://kubernetes.default.svc
   clusterResourceWhitelist:
     - group: ''
