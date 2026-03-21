@@ -223,6 +223,12 @@ data:
         originRequest:
           connectTimeout: 10s
           keepAliveTimeout: 20s
+      # Plane Project Management
+      - hostname: plane.sogos.io
+        service: http://plane-proxy.plane.svc.cluster.local:80
+        originRequest:
+          connectTimeout: 10s
+          keepAliveTimeout: 20s
       # IPTV Live TV App
       - hostname: tv.sogos.io
         service: http://iptv-app.iptv.svc.cluster.local:80
