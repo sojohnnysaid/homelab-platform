@@ -253,9 +253,9 @@ data:
         originRequest:
           connectTimeout: 10s
           keepAliveTimeout: 20s
-      # TOPS Permit Web App Demo
-      - hostname: tops.sogos.io
-        service: http://tops-frontend.tops.svc.cluster.local:80
+      # PMCS LLC Permit Web App Demo
+      - hostname: pmcsllc.sogos.io
+        service: http://pmcsllc-frontend.pmcsllc.svc.cluster.local:80
         originRequest:
           connectTimeout: 10s
           keepAliveTimeout: 20s

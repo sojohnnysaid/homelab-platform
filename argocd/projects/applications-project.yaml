@@ -40,7 +40,7 @@ spec:
       server: https://kubernetes.default.svc
     - namespace: claude-assistant
       server: https://kubernetes.default.svc
-    - namespace: tops
+    - namespace: pmcsllc
       server: https://kubernetes.default.svc
   clusterResourceWhitelist:
     - group: ''

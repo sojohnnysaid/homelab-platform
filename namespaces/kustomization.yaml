@@ -8,4 +8,4 @@ resources:
   - static-sites-namespace.yaml
   - default-namespace.yaml
   - claude-assistant-namespace.yaml
-  - tops-namespace.yaml
+  - pmcsllc-namespace.yaml
