@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: standalone-apps
+  namespace: argocd
+  labels:
+    env: prod
+    domain: standalone
+    tier: infra
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/sojohnnysaid/homelab-platform.git
+    targetRevision: main
+    path: argocd/apps/standalone
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

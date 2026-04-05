@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: uat-mirai-backend
+  namespace: argocd
+  labels:
+    env: uat
+    domain: mirai
+    tier: backend
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: mirai-uat
+  source:
+    repoURL: https://github.com/Sogos-LLC/mirai-app.git
+    targetRevision: uat
+    path: k8s-uat/backend
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mirai-uat
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - AllowEmpty=false
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mirai-dev-apps
+  namespace: argocd
+  labels:
+    env: dev
+    domain: mirai
+    tier: infra
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/sojohnnysaid/homelab-platform.git
+    targetRevision: main
+    path: argocd/apps/mirai-dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

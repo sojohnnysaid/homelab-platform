@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: prod-mirai-temporal
+  namespace: argocd
+  labels:
+    env: prod
+    domain: mirai
+    tier: data
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: mirai-prod
+  source:
+    repoURL: https://github.com/Sogos-LLC/mirai-app.git
+    targetRevision: main
+    path: k8s/temporal
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mirai
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - AllowEmpty=false
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
