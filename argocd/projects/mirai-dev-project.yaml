@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: mirai-dev
+  namespace: argocd
+spec:
+  description: Mirai dev applications
+  sourceRepos:
+    - 'https://github.com/Sogos-LLC/mirai-app.git'
+    - 'https://github.com/sojohnnysaid/mirai-app.git'
+  destinations:
+    - namespace: mirai-loc-dev
+      server: https://kubernetes.default.svc
+    - namespace: redis-loc-dev
+      server: https://kubernetes.default.svc
+    - namespace: kratos-loc-dev
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+  namespaceResourceBlacklist:
+    - group: ''
+      kind: ResourceQuota
+    - group: ''
+      kind: LimitRange

@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: homelab-apps
+  namespace: argocd
+spec:
+  description: Standalone homelab applications
+  sourceRepos:
+    - 'https://github.com/sojohnnysaid/static-sites.git'
+    - 'https://github.com/sojohnnysaid/sogos-marketing.git'
+    - 'https://github.com/sojohnnysaid/IPTV-app.git'
+    - 'https://github.com/sojohnnysaid/claude-assistant.git'
+    - 'https://github.com/sojohnnysaid/permit-web-app-demo.git'
+  destinations:
+    - namespace: static-sites
+      server: https://kubernetes.default.svc
+    - namespace: sogos-marketing
+      server: https://kubernetes.default.svc
+    - namespace: iptv
+      server: https://kubernetes.default.svc
+    - namespace: claude-assistant
+      server: https://kubernetes.default.svc
+    - namespace: pmcsllc
+      server: https://kubernetes.default.svc
+    - namespace: default
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+  namespaceResourceBlacklist:
+    - group: ''
+      kind: ResourceQuota
+    - group: ''
+      kind: LimitRange
